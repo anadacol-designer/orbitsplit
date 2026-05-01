@@ -75,7 +75,8 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 .logo-type span{color:var(--orange);}
 .nav-right{display:flex;align-items:center;gap:var(--space-3);}
 .nav-user{display:flex;align-items:center;gap:var(--space-3);}
-.nav-avatar{width:32px;height:32px;border-radius:var(--radius-full);background:linear-gradient(135deg,oklch(65% 0.28 250/0.4),oklch(72% 0.16 305/0.4));border:1px solid var(--glass-border-hi);display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);font-weight:var(--weight-semibold);color:var(--fg-primary);}
+.nav-avatar{width:32px;height:32px;border-radius:var(--radius-full);background:linear-gradient(135deg,oklch(65% 0.28 250/0.4),oklch(72% 0.16 305/0.4));border:1px solid var(--glass-border-hi);display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);font-weight:var(--weight-semibold);color:var(--fg-primary);overflow:hidden;}
+.nav-avatar img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius-full);display:block;}
 .nav-email{font-size:var(--text-xs);color:var(--fg-tertiary);}
 .signout-btn{font-family:var(--font-ui);font-size:var(--text-xs);font-weight:var(--weight-medium);color:var(--fg-tertiary);background:var(--glass-xs);border:1px solid var(--glass-border);border-radius:var(--radius-full);padding:6px 14px;cursor:pointer;transition:all var(--dur-fast) var(--ease-glass);}
 .signout-btn:hover{color:var(--fg-primary);background:var(--glass-sm);}
@@ -472,7 +473,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
         <div class="sync-dot" id="sync-dot"></div>
         <span id="sync-label">Saved</span>
       </div>
-      <button class="nav-avatar" id="nav-avatar" onclick="showView('profile')" title="Your profile" style="cursor:pointer;border:none;"></button>
+      <button class="nav-avatar" id="nav-avatar" onclick="toggleUserMenu(event)" title="Your profile" style="cursor:pointer;border:none;"></button>
     </div>
   </div>
   <button class="hamburger" id="hamburger" style="display:none;">
@@ -886,7 +887,8 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 // ── PROFILE ──
 function openProfile(){
   const email = currentUser?.email || '';
-  const name  = currentUser?.user_metadata?.display_name || '';
+  const meta  = currentUser?.user_metadata || {};
+  const name  = meta.display_name || meta.full_name || meta.name || '';
   document.getElementById('profile-email-input').value  = email;
   document.getElementById('profile-name-input').value   = name;
   document.getElementById('profile-email-display').textContent = email;
@@ -895,11 +897,30 @@ function openProfile(){
 }
 
 function updateProfileDisplay(name){
-  const email = currentUser?.email || '';
+  const email    = currentUser?.email || '';
+  const meta     = currentUser?.user_metadata || {};
+  const avatarUrl = meta.avatar_url || meta.picture || '';
   const initials = name ? name[0].toUpperCase() : (email[0]||'?').toUpperCase();
-  document.getElementById('profile-avatar-lg').textContent = initials;
-  document.getElementById('nav-avatar').textContent = initials;
-  document.getElementById('profile-name-display').textContent = name || email;
+  const displayName = name || email;
+
+  // Nav avatar
+  const navAv = document.getElementById('nav-avatar');
+  if(avatarUrl){
+    navAv.innerHTML = `<img src="${avatarUrl}" alt="${initials}" onerror="this.parentElement.textContent='${initials}'"/>`;
+  } else {
+    navAv.textContent = initials;
+  }
+
+  // Large profile avatar
+  const lgAv = document.getElementById('profile-avatar-lg');
+  if(avatarUrl){
+    lgAv.style.padding = '0';
+    lgAv.innerHTML = `<img src="${avatarUrl}" alt="${initials}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.textContent='${initials}'"/>`;
+  } else {
+    lgAv.textContent = initials;
+  }
+
+  document.getElementById('profile-name-display').textContent = displayName;
 }
 
 function previewName(){
@@ -1105,6 +1126,28 @@ async function signUp(){
   else{sucEl.textContent='Account created! Check your email to confirm, then sign in.';sucEl.style.display='block';}
 }
 
+
+function toggleUserMenu(e){
+  e.stopPropagation();
+  const menu = document.getElementById('user-menu');
+  if(menu.style.display !== 'none'){ closeUserMenu(); return; }
+  // Populate name/email
+  const meta = currentUser?.user_metadata || {};
+  const name = meta.display_name || meta.full_name || meta.name || '';
+  document.getElementById('user-menu-name').textContent = name || currentUser?.email || '';
+  document.getElementById('user-menu-email').textContent = name ? currentUser?.email || '' : '';
+  // Position below avatar
+  const btn = document.getElementById('nav-avatar');
+  const rect = btn.getBoundingClientRect();
+  menu.style.display = '';
+  menu.style.top = (rect.bottom + 8) + 'px';
+  menu.style.right = (window.innerWidth - rect.right) + 'px';
+  menu.style.left = 'auto';
+}
+function closeUserMenu(){
+  document.getElementById('user-menu').style.display = 'none';
+}
+
 async function signOut(){
   document.getElementById('nav-right').style.display='none';
   document.getElementById('hamburger').style.display='none';
@@ -1134,6 +1177,14 @@ async function init(){
       setTimeout(()=>document.getElementById('new-password-input').focus(),50);
     } else if(session&&!currentUser){
       currentUser=session.user;
+      // Auto-save Google name as display_name on first OAuth login
+      const meta=currentUser.user_metadata||{};
+      if(!meta.display_name && (meta.full_name||meta.name)){
+        const googleName=meta.full_name||meta.name;
+        sb.auth.updateUser({data:{display_name:googleName}}).then(()=>{
+          if(currentUser) currentUser.user_metadata={...currentUser.user_metadata,display_name:googleName};
+        });
+      }
       hideEl('auth-screen');
       showApp();
     } else if(!session&&currentUser){
@@ -1151,8 +1202,9 @@ async function showApp(){
   document.getElementById('main-nav').classList.add('nav-floating');
   // Update nav
   const email=currentUser.email||'';
-  const displayName = currentUser?.user_metadata?.display_name || '';
-  document.getElementById('nav-avatar').textContent=(displayName||email)[0].toUpperCase();
+  const meta=currentUser?.user_metadata||{};
+  const displayName=meta.display_name||meta.full_name||meta.name||'';
+  updateProfileDisplay(displayName||email);
   // Load trips
   await loadTrips();
   renderDashboard();
@@ -1811,5 +1863,22 @@ init();
 </script>
 
 
+
+<!-- USER MENU -->
+<div class="ctx-menu" id="user-menu" style="display:none;position:fixed;z-index:700;min-width:200px;">
+  <div style="padding:var(--space-3) var(--space-3) var(--space-2);border-bottom:1px solid var(--glass-border);margin-bottom:var(--space-2);">
+    <div id="user-menu-name" style="font-size:var(--text-xs);font-weight:var(--weight-semibold);color:var(--fg-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;"></div>
+    <div id="user-menu-email" style="font-size:var(--text-2xs);color:var(--fg-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;margin-top:2px;"></div>
+  </div>
+  <button class="ctx-item" onclick="closeUserMenu();showView('profile')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Profile settings
+  </button>
+  <div class="ctx-divider"></div>
+  <button class="ctx-item danger" onclick="closeUserMenu();signOut()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Sign out
+  </button>
+</div>
 </body>
 </html>
