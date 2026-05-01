@@ -784,8 +784,18 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
     <button class="modal-close" onclick="closeModal('modal-add-expense')">×</button>
     <div class="modal-fields">
       <div class="field"><label>Description</label><input type="text" id="e-name" placeholder="Train, dinner, museum tickets…"/></div>
-      <div class="field"><label>Amount (€)</label><input type="number" id="e-amt" placeholder="0.00" min="0" step="0.01"/></div>
-      <div class="field"><label>Paid by</label><select id="e-split"></select></div>
+      <div class="field"><label>Amount (€)</label><input type="number" id="e-amt" placeholder="0.00" min="0" step="0.01" oninput="refreshSplitFields()"/></div>
+      <div class="field"><label>Who paid</label><select id="e-split"></select></div>
+      <div class="field">
+        <label>How to split</label>
+        <select id="e-method" onchange="refreshSplitFields()">
+          <option value="even">Even split</option>
+          <option value="custom">Custom amounts</option>
+          <option value="percent">By percentage</option>
+        </select>
+      </div>
+      <div id="e-split-fields"></div>
+      <div id="e-split-hint" style="font-size:11px;color:var(--fg-disabled);margin-top:-8px;"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-expense')">Cancel</button>
@@ -1279,8 +1289,92 @@ function closeModal(id){
 function openAddExpense(){
   const el=document.getElementById('modal-add-expense');
   el.style.display='flex';
-  document.getElementById('e-split').innerHTML=buildSplitOptions('');
+  const splitEl=document.getElementById('e-split');
+  splitEl.innerHTML=buildSplitOptions('');
+  if(splitEl.options.length>0) splitEl.selectedIndex=0;
+  document.getElementById('e-method').value='even';
+  document.getElementById('e-amt').value='';
+  refreshSplitFields();
   setTimeout(()=>document.getElementById('e-name').focus(),50);
+}
+
+function refreshSplitFields(){
+  const method=document.getElementById('e-method').value;
+  const amount=parseFloat(document.getElementById('e-amt').value)||0;
+  const me='You';
+  const travellers=getTravellers();
+  const all=[me,...travellers];
+  const container=document.getElementById('e-split-fields');
+  const hint=document.getElementById('e-split-hint');
+
+  if(method==='even'){
+    const share=all.length>0?amount/all.length:0;
+    container.innerHTML='';
+    hint.textContent=all.length>1?`€${share.toFixed(2)} each across ${all.length} people`:'';
+    return;
+  }
+
+  if(method==='custom'){
+    hint.textContent='Enter how much each person owes. Must add up to the total.';
+    container.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">`+
+      all.map(p=>`
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:13px;color:var(--fg-secondary);min-width:80px;">${esc(p)}</span>
+          <input type="number" id="ecustom_${p.replace(/\s/g,'_')}" placeholder="0.00" min="0" step="0.01"
+            style="flex:1;" oninput="validateCustomSplit()" value="${amount>0?(amount/all.length).toFixed(2):''}"/>
+        </div>`).join('')+
+      `<div id="ecustom-total" style="font-size:11px;color:var(--fg-disabled);text-align:right;"></div></div>`;
+    validateCustomSplit();
+    return;
+  }
+
+  if(method==='percent'){
+    hint.textContent='Enter the percentage each person owes. Must add up to 100%.';
+    const evenPct=Math.round(100/all.length);
+    container.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">`+
+      all.map((p,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:13px;color:var(--fg-secondary);min-width:80px;">${esc(p)}</span>
+          <input type="number" id="epct_${p.replace(/\s/g,'_')}" placeholder="0" min="0" max="100" step="1"
+            style="flex:1;" oninput="validatePctSplit()" value="${i===all.length-1?100-evenPct*(all.length-1):evenPct}"/>
+          <span style="font-size:13px;color:var(--fg-tertiary);">%</span>
+        </div>`).join('')+
+      `<div id="epct-total" style="font-size:11px;color:var(--fg-disabled);text-align:right;"></div></div>`;
+    validatePctSplit();
+    return;
+  }
+}
+
+function validateCustomSplit(){
+  const me='You'; const all=[me,...getTravellers()];
+  const total=parseFloat(document.getElementById('e-amt').value)||0;
+  let sum=0;
+  all.forEach(p=>{
+    const v=parseFloat(document.getElementById('ecustom_'+p.replace(/\s/g,'_'))?.value)||0;
+    sum+=v;
+  });
+  const el=document.getElementById('ecustom-total');
+  if(el){
+    const diff=sum-total;
+    const ok=Math.abs(diff)<0.01;
+    el.textContent=ok?`✓ Adds up to €${sum.toFixed(2)}`:`€${sum.toFixed(2)} of €${total.toFixed(2)} — ${diff>0?'over':'under'} by €${Math.abs(diff).toFixed(2)}`;
+    el.style.color=ok?'var(--mint)':'oklch(72% 0.22 18)';
+  }
+}
+
+function validatePctSplit(){
+  const me='You'; const all=[me,...getTravellers()];
+  let sum=0;
+  all.forEach(p=>{
+    const v=parseFloat(document.getElementById('epct_'+p.replace(/\s/g,'_'))?.value)||0;
+    sum+=v;
+  });
+  const el=document.getElementById('epct-total');
+  if(el){
+    const ok=Math.abs(sum-100)<0.5;
+    el.textContent=ok?`✓ ${sum}%`:`${sum}% — must add up to 100%`;
+    el.style.color=ok?'var(--mint)':'oklch(72% 0.22 18)';
+  }
 }
 function openAddDoc(){
   document.getElementById('modal-add-doc').style.display='flex';
@@ -1347,19 +1441,94 @@ function addExpense(){
   const n=document.getElementById('e-name').value.trim();
   const a=parseFloat(document.getElementById('e-amt').value);
   if(!n||isNaN(a)||a<=0) return;
-  const splitVal=document.getElementById('e-split').value||'Everyone'; t.expenses.push({id:Date.now(),name:n,amount:a,split:splitVal}); closeModal('modal-add-expense');
+  const splitVal=document.getElementById('e-split').value||'you:split';
+  const method=document.getElementById('e-method').value;
+  const me='You'; const all=[me,...getTravellers()];
+
+  // Build custom shares if needed
+  let customShares=null;
+  if(method==='custom'){
+    customShares={};
+    all.forEach(p=>{customShares[p]=parseFloat(document.getElementById('ecustom_'+p.replace(/\s/g,'_'))?.value)||0;});
+  } else if(method==='percent'){
+    customShares={};
+    all.forEach(p=>{
+      const pct=(parseFloat(document.getElementById('epct_'+p.replace(/\s/g,'_'))?.value)||0)/100;
+      customShares[p]=a*pct;
+    });
+  }
+
+  t.expenses.push({id:Date.now(),name:n,amount:a,split:splitVal,method,customShares});
+  closeModal('modal-add-expense');
   document.getElementById('e-name').value='';document.getElementById('e-amt').value='';
   renderExpenses(); debouncedSave(t.id);
   document.getElementById('pl-spend').textContent='€'+t.expenses.reduce((s,e)=>s+e.amount,0).toFixed(0);
 }
 function delExp(id){const t=currentTrip();if(!t)return;t.expenses=t.expenses.filter(e=>e.id!==id);renderExpenses();debouncedSave(t.id);document.getElementById('pl-spend').textContent='€'+t.expenses.reduce((s,e)=>s+e.amount,0).toFixed(0);}
 function getTravellers(){
-  const t=currentTrip(); if(!t) return ['You'];
-  return ['Everyone',...(t.travellers&&t.travellers.length?t.travellers:['You'])];
+  const t=currentTrip(); if(!t) return [];
+  return t.travellers&&t.travellers.length?t.travellers:[];
 }
+
 function buildSplitOptions(selectedVal){
-  const opts=getTravellers();
-  return opts.map(o=>`<option value="${esc(o)}" ${selectedVal===o?'selected':''}>${esc(o)}</option>`).join('');
+  const travellers=getTravellers();
+  const me='You';
+  let opts=[];
+
+  if(travellers.length===1){
+    // 2-person trip: you + 1 other
+    const other=travellers[0];
+    opts=[
+      {val:`${me}:split`,  label:`${me} paid — split equally with ${other}`},
+      {val:`${me}:owed`,   label:`${me} paid — ${other} owes the full amount`},
+      {val:`${other}:split`,label:`${other} paid — split equally with ${me}`},
+      {val:`${other}:owed`, label:`${other} paid — ${me} owes the full amount`},
+    ];
+  } else if(travellers.length>1){
+    // Group trip: you paid or someone else paid, split options
+    opts.push({val:`${me}:split`, label:`${me} paid — split equally`});
+    opts.push({val:`${me}:owed`,  label:`${me} paid — I'm owed the full amount`});
+    travellers.forEach(p=>{
+      opts.push({val:`${p}:split`, label:`${p} paid — split equally`});
+      opts.push({val:`${p}:owed`,  label:`${p} paid — owed the full amount`});
+    });
+  } else {
+    // Solo trip
+    opts=[
+      {val:'you:full', label:'You paid'},
+    ];
+  }
+
+  return opts.map(o=>`<option value="${esc(o.val)}" ${selectedVal===o.val?'selected':''}>${esc(o.label)}</option>`).join('');
+}
+
+function parseSplit(val, amount, method, customShares){
+  const travellers=getTravellers();
+  const me='You';
+  const all=[me,...travellers];
+
+  // Custom splits take precedence
+  if((method==='custom'||method==='percent')&&customShares){
+    const[payer]=val?val.split(':'):[me];
+    return{payer:payer||me,shares:customShares};
+  }
+
+  if(!val||val==='you:full') return{payer:me,shares:{[me]:amount}};
+  const[payer,mode]=val.split(':');
+  if(mode==='split'){
+    const share=amount/all.length;
+    const shares={};
+    all.forEach(p=>{shares[p]=share;});
+    return{payer,shares};
+  }
+  if(mode==='owed'){
+    const others=all.filter(p=>p!==payer);
+    const shares={};
+    if(others.length>0){const share=amount/others.length; others.forEach(p=>{shares[p]=share;});}
+    shares[payer]=0;
+    return{payer,shares};
+  }
+  return{payer:me,shares:{[me]:amount}};
 }
 function renderExpenses(){
   const t=currentTrip(); if(!t) return;
