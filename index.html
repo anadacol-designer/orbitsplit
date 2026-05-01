@@ -158,6 +158,8 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 
 /* ── FORMS ── */
 .sh{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-6);flex-wrap:wrap;}
+.sh h2{margin:0;}
+.sh .ct{white-space:nowrap;}
 .sh h2{font-family:var(--font-display);font-size:var(--text-xl);font-weight:var(--weight-semibold);}
 .sh .ct{font-size:var(--text-2xs);font-weight:var(--weight-semibold);letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);}
 .add-form{border-radius:var(--radius-md);padding:var(--space-6);margin-bottom:var(--space-8);display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:flex-end;box-shadow:var(--top-shine),var(--inner-glow);}
@@ -307,6 +309,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
   /* Rows — wrap instead of overflow */
   .sh{flex-wrap:wrap;}
+  .sh .btn{width:100%;justify-content:center;margin-left:0!important;}
   .exp-split{flex-wrap:wrap;}
   .exp-row,.doc-row{flex-wrap:wrap;padding:var(--space-3) var(--space-4);}
   .trip-card-stats{flex-wrap:wrap;gap:var(--space-3);}
@@ -567,8 +570,8 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
       <!-- Places -->
       <div class="planner-section active" id="psec-places">
         <div class="sh">
-          <h2>Places &amp; bookings</h2>
-          <span class="ct" id="c-places">0 saved</span>
+          <div style="display:flex;align-items:baseline;gap:var(--space-3);flex:1;min-width:0;"><h2>Places &amp; bookings</h2>
+          <span class="ct" id="c-places">0 saved</span></div>
           <button class="btn btn-primary btn-inline" onclick="openAddPlace()" style="margin-left:auto;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add place
           </button>
@@ -580,7 +583,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
       <!-- Expenses -->
       <div class="planner-section" id="psec-expenses">
-        <div class="sh"><h2>Expenses</h2><span class="ct" id="c-expenses">0 entries</span><button class="btn btn-primary btn-inline" onclick="openAddExpense()" style="margin-left:auto;">
+        <div class="sh"><div style="display:flex;align-items:baseline;gap:var(--space-3);flex:1;min-width:0;"><h2>Expenses</h2><span class="ct" id="c-expenses">0 entries</span></div><button class="btn btn-primary btn-inline" onclick="openAddExpense()" style="margin-left:auto;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add expense
           </button></div>
         <div class="metrics" id="metrics-wrap">
@@ -594,7 +597,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
       <!-- Documents -->
       <div class="planner-section" id="psec-docs">
-        <div class="sh"><h2>Documents &amp; references</h2><span class="ct" id="c-docs">0 saved</span><button class="btn btn-primary btn-inline" onclick="openAddDoc()" style="margin-left:auto;">
+        <div class="sh"><div style="display:flex;align-items:baseline;gap:var(--space-3);flex:1;min-width:0;"><h2>Documents &amp; references</h2><span class="ct" id="c-docs">0 saved</span></div><button class="btn btn-primary btn-inline" onclick="openAddDoc()" style="margin-left:auto;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add document
           </button></div>
         <div id="docs-list"></div>
@@ -603,7 +606,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
       <!-- Checklist -->
       <div class="planner-section" id="psec-checklist">
-        <div class="sh"><h2>Checklist</h2><span class="ct" id="c-checks">0 tasks</span></div>
+        <div class="sh"><div style="display:flex;align-items:baseline;gap:var(--space-3);flex:1;min-width:0;"><h2>Checklist</h2><span class="ct" id="c-checks">0 tasks</span></div></div>
         <div class="add-form glass">
           <div class="field" style="flex:1;"><label>New task</label><input type="text" id="ck-text" placeholder="Print boarding passes, buy travel adaptor…" onkeydown="if(event.key==='Enter')addCheck()"/></div>
           <button class="btn btn-primary btn-inline" onclick="addCheck()">
@@ -616,7 +619,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
       <!-- Journal -->
       <div class="planner-section" id="psec-journal">
-        <div class="sh"><h2>Journal</h2><span class="ct" id="c-journal">0 entries</span><button class="btn btn-primary btn-inline" onclick="openAddJournal()" style="margin-left:auto;">
+        <div class="sh"><div style="display:flex;align-items:baseline;gap:var(--space-3);flex:1;min-width:0;"><h2>Journal</h2><span class="ct" id="c-journal">0 entries</span></div><button class="btn btn-primary btn-inline" onclick="openAddJournal()" style="margin-left:auto;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New entry
           </button></div>
         <div id="journal-list"></div>
@@ -625,7 +628,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
       <!-- Pictures -->
       <div class="planner-section" id="psec-pictures">
-        <div class="sh"><h2>Pictures</h2><span class="ct" id="c-pictures">0 photos</span><button class="btn btn-primary btn-inline" onclick="document.getElementById('pic-input').click()" style="margin-left:auto;">
+        <div class="sh"><div style="display:flex;align-items:baseline;gap:var(--space-3);flex:1;min-width:0;"><h2>Pictures</h2><span class="ct" id="c-pictures">0 photos</span></div><button class="btn btn-primary btn-inline" onclick="document.getElementById('pic-input').click()" style="margin-left:auto;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add photos
           </button></div>
         <input type="file" id="pic-input" accept="image/*" multiple style="display:none;" onchange="addPictures(event)"/>
