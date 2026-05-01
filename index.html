@@ -707,108 +707,123 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
         <div class="sh">
           <h2>Places &amp; bookings</h2>
           <span class="ct" id="c-places">0 saved</span>
-          <button class="btn btn-primary btn-inline" onclick="openAddPlace()" style="margin-left:auto;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add place
-          </button>
+
         </div>
         <div class="cards" id="places-list"></div>
-        <div class="empty" id="places-empty">
-          Nothing here yet.<br/>
-          <button class="btn btn-primary btn-inline" onclick="openAddPlace()" style="margin-top:16px;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add your first place
-          </button>
-        </div>
+<div class="empty" id="places-empty" style="display:none;"></div>
       </div>
 
       <!-- Expenses -->
       <div class="planner-section" id="psec-expenses">
         <div class="sh"><h2>Expenses</h2><span class="ct" id="c-expenses">0 entries</span></div>
-        <div class="metrics">
+        <div class="metrics" id="metrics-wrap">
           <div class="metric glass hi"><div class="ml">Total spent</div><div class="mv" id="m-total">€0</div></div>
           <div class="metric glass"><div class="ml">Your share</div><div class="mv" id="m-you">€0</div></div>
           <div class="metric glass"><div class="ml">Mom's share</div><div class="mv" id="m-mom">€0</div></div>
         </div>
-        <div class="add-form glass">
-          <div class="field" style="flex:2;min-width:200px;"><label>Description</label><input type="text" id="e-name" placeholder="Train, dinner, museum tickets…"/></div>
-          <div class="field" style="max-width:130px;"><label>Amount (€)</label><input type="number" id="e-amt" placeholder="0.00" min="0" step="0.01"/></div>
-          <div class="field" style="max-width:155px;"><label>Who pays</label>
-            <select id="e-split"><option value="shared">Split equally</option><option value="you">You only</option><option value="mom">Mom only</option></select>
-          </div>
-          <button class="btn btn-primary btn-inline" onclick="addExpense()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add
-          </button>
-        </div>
         <div class="exp-list" id="exp-list"></div>
-        <div class="empty" id="exp-empty">No expenses yet.<br/>Add your first bill above.</div>
+        <div class="empty" id="exp-empty" style="display:none;"></div>
       </div>
 
       <!-- Documents -->
       <div class="planner-section" id="psec-docs">
         <div class="sh"><h2>Documents &amp; references</h2><span class="ct" id="c-docs">0 saved</span></div>
-        <div class="add-form glass">
-          <div class="field" style="flex:1;min-width:180px;"><label>Label</label><input type="text" id="d-name" placeholder="Passport no., flight conf., insurance…"/></div>
-          <div class="field" style="flex:2;min-width:200px;"><label>Value / reference</label><input type="text" id="d-val" placeholder="Number, code, link…"/></div>
-          <button class="btn btn-primary btn-inline" onclick="addDoc()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save
-          </button>
-        </div>
         <div id="docs-list"></div>
-        <div class="empty" id="docs-empty">No documents saved yet.</div>
-
+        <div class="empty" id="docs-empty" style="display:none;"></div>
       </div>
 
       <!-- Checklist -->
       <div class="planner-section" id="psec-checklist">
         <div class="sh"><h2>Checklist</h2><span class="ct" id="c-checks">0 tasks</span></div>
-        <div class="add-form glass">
-          <div class="field" style="flex:1;"><label>New task</label><input type="text" id="ck-text" placeholder="Print boarding passes, buy travel adaptor…" onkeydown="if(event.key==='Enter')addCheck()"/></div>
-          <button class="btn btn-primary btn-inline" onclick="addCheck()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add task
-          </button>
-        </div>
         <div class="check-list" id="check-list"></div>
-        <div class="empty" id="check-empty">Nothing here yet.<br/>Add things to do before or during the trip.</div>
+        <div class="empty" id="check-empty" style="display:none;"></div>
       </div>
 
       <!-- Journal -->
       <div class="planner-section" id="psec-journal">
         <div class="sh"><h2>Journal</h2><span class="ct" id="c-journal">0 entries</span></div>
-        <div class="journal-compose glass">
-          <div class="journal-compose-top">
-            <div class="field" style="flex:0 0 160px;"><label>Date</label><input type="date" id="j-date"/></div>
-            <div class="field" style="flex:1;min-width:200px;"><label>Title</label><input type="text" id="j-title" placeholder="e.g. First morning in Lisbon…"/></div>
-          </div>
-          <div class="field" style="margin-top:var(--space-3);"><label>Write</label>
-            <textarea id="j-body" class="journal-textarea" placeholder="What happened today? What did you see, feel, taste…"></textarea>
-          </div>
-          <div class="journal-compose-footer">
-            <span class="journal-char-count" id="j-count">0 words</span>
-            <button class="btn btn-primary btn-inline" onclick="addJournalEntry()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Save entry
-            </button>
-          </div>
-        </div>
         <div id="journal-list"></div>
-        <div class="empty" id="journal-empty">Nothing written yet.<br/>Your first entry is waiting to be written.</div>
+        <div class="empty" id="journal-empty" style="display:none;"></div>
       </div>
 
       <!-- Pictures -->
       <div class="planner-section" id="psec-pictures">
         <div class="sh"><h2>Pictures</h2><span class="ct" id="c-pictures">0 photos</span></div>
-        <div class="pic-dropzone" onclick="document.getElementById('pic-input').click()">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          <div style="font-size:var(--text-sm);color:var(--fg-tertiary);">Click to add photos</div>
-          <div style="font-size:var(--text-xs);color:var(--fg-disabled);">JPG, PNG, WEBP — stored in your account</div>
-          <input type="file" id="pic-input" accept="image/*" multiple style="display:none;" onchange="addPictures(event)"/>
-        </div>
+        <input type="file" id="pic-input" accept="image/*" multiple style="display:none;" onchange="addPictures(event)"/>
         <div class="pictures-grid" id="pictures-grid"></div>
-        <div class="empty" id="pictures-empty">No photos yet.<br/>Add some memories from your trip.</div>
+        <div class="empty" id="pictures-empty" style="display:none;"></div>
       </div>
 
     </div>
   </div>
 
 </div><!-- end app -->
+
+<!-- ADD EXPENSE MODAL -->
+<div class="modal-overlay" id="modal-add-expense" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Add expense</div>
+    <button class="modal-close" onclick="closeModal('modal-add-expense')">×</button>
+    <div class="modal-fields">
+      <div class="field"><label>Description</label><input type="text" id="e-name" placeholder="Train, dinner, museum tickets…"/></div>
+      <div class="field"><label>Amount (€)</label><input type="number" id="e-amt" placeholder="0.00" min="0" step="0.01"/></div>
+      <div class="field"><label>Paid by</label><select id="e-split"></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-expense')">Cancel</button>
+      <button class="btn btn-primary btn-inline" onclick="addExpense()">Add expense</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD DOC MODAL -->
+<div class="modal-overlay" id="modal-add-doc" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Add document</div>
+    <button class="modal-close" onclick="closeModal('modal-add-doc')">×</button>
+    <div class="modal-fields">
+      <div class="field"><label>Label</label><input type="text" id="d-name" placeholder="Passport no., flight conf., insurance…"/></div>
+      <div class="field"><label>Value / reference</label><input type="text" id="d-val" placeholder="Number, code, link…"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-doc')">Cancel</button>
+      <button class="btn btn-primary btn-inline" onclick="addDoc()">Save document</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD TASK MODAL -->
+<div class="modal-overlay" id="modal-add-task" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Add task</div>
+    <button class="modal-close" onclick="closeModal('modal-add-task')">×</button>
+    <div class="modal-fields">
+      <div class="field"><label>Task</label><input type="text" id="ck-text" placeholder="Print boarding passes, buy adaptor…" onkeydown="if(event.key==='Enter')addCheck()"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-task')">Cancel</button>
+      <button class="btn btn-primary btn-inline" onclick="addCheck()">Add task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD JOURNAL MODAL -->
+<div class="modal-overlay" id="modal-add-journal" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">New journal entry</div>
+    <button class="modal-close" onclick="closeModal('modal-add-journal')">×</button>
+    <div class="modal-fields">
+      <div class="field"><label>Date</label><input type="date" id="j-date"/></div>
+      <div class="field"><label>Title</label><input type="text" id="j-title" placeholder="e.g. First morning in Lisbon…"/></div>
+      <div class="field"><label>Write</label><textarea id="j-body" style="min-height:160px;" placeholder="What happened today? What did you see, feel, taste…"></textarea></div>
+      <div style="display:flex;justify-content:flex-end;"><span class="journal-char-count" id="j-count">0 words</span></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-journal')">Cancel</button>
+      <button class="btn btn-primary btn-inline" onclick="addJournalEntry()">Save entry</button>
+    </div>
+  </div>
+</div>
 
 <!-- ADD PLACE MODAL -->
 <div class="modal-overlay" id="modal-add-place" style="display:none;">
@@ -1237,6 +1252,33 @@ function renderPlanner(){
 }
 
 // ── PLACES ──
+function closeModal(id){
+  document.getElementById(id).style.display='none';
+}
+function openAddExpense(){
+  const el=document.getElementById('modal-add-expense');
+  el.style.display='flex';
+  document.getElementById('e-split').innerHTML=buildSplitOptions('');
+  setTimeout(()=>document.getElementById('e-name').focus(),50);
+}
+function openAddDoc(){
+  document.getElementById('modal-add-doc').style.display='flex';
+  setTimeout(()=>document.getElementById('d-name').focus(),50);
+}
+function openAddTask(){
+  document.getElementById('modal-add-task').style.display='flex';
+  setTimeout(()=>document.getElementById('ck-text').focus(),50);
+}
+function openAddJournal(){
+  document.getElementById('modal-add-journal').style.display='flex';
+  initJournalDate();
+  setTimeout(()=>document.getElementById('j-title').focus(),50);
+}
+// Close on overlay click
+['modal-add-expense','modal-add-doc','modal-add-task','modal-add-journal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeModal(id);});
+});
+
 function openAddPlace(){
   document.getElementById('modal-add-place').style.display='flex';
   setTimeout(()=>{
@@ -1272,7 +1314,9 @@ function renderPlaces(){
     ${p.ref?`<div class="card-addr" style="color:var(--fg-tertiary);">${esc(p.ref)}</div>`:''}
     ${(p.startDate||p.date)?`<div class="card-date">${fmtD(p.startDate||p.date)}${p.endDate&&p.endDate!==p.startDate?' — '+fmtD(p.endDate):''}</div>`:''}
     </div>`).join('');
-  document.getElementById('places-empty').style.display=t.places.length?'none':'block';
+  const newCard=`<div class="trip-card-new" onclick="openAddPlace()"><div class="trip-card-new-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="trip-card-new-label">Add place</div><div class="trip-card-new-sub">Hotel, flight, restaurant…</div></div>`;
+  document.getElementById('places-list').innerHTML+=newCard;
+  document.getElementById('places-empty').style.display='none';
   document.getElementById('c-places').textContent=t.places.length+' saved';
 }
 
@@ -1282,7 +1326,7 @@ function addExpense(){
   const n=document.getElementById('e-name').value.trim();
   const a=parseFloat(document.getElementById('e-amt').value);
   if(!n||isNaN(a)||a<=0) return;
-  const splitVal=document.getElementById('e-split').value||'Everyone'; t.expenses.push({id:Date.now(),name:n,amount:a,split:splitVal});
+  const splitVal=document.getElementById('e-split').value||'Everyone'; t.expenses.push({id:Date.now(),name:n,amount:a,split:splitVal}); closeModal('modal-add-expense');
   document.getElementById('e-name').value='';document.getElementById('e-amt').value='';
   renderExpenses(); debouncedSave(t.id);
   document.getElementById('pl-spend').textContent='€'+t.expenses.reduce((s,e)=>s+e.amount,0).toFixed(0);
@@ -1330,22 +1374,26 @@ function renderExpenses(){
     <div class="exp-split">${esc(e.split)}</div>
     <div class="exp-amt">€${e.amount.toFixed(2)}</div>
     <button class="exp-del" onclick="delExp(${e.id})">×</button></div>`).join('');
-  document.getElementById('exp-empty').style.display=t.expenses.length?'none':'block';
+  const newExpRow=`<div class="trip-card-new" onclick="openAddExpense()" style="min-height:80px;flex-direction:row;justify-content:flex-start;gap:var(--space-3);padding:var(--space-4) var(--space-6);border-radius:var(--radius-sm);"><div class="trip-card-new-icon" style="width:36px;height:36px;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div><div class="trip-card-new-label" style="text-align:left;">Add expense</div><div class="trip-card-new-sub" style="text-align:left;">Track a bill or payment</div></div></div>`;
+  document.getElementById('exp-list').innerHTML+=newExpRow;
+  document.getElementById('exp-empty').style.display='none';
 }
 
 // ── DOCS ──
-function addDoc(){const t=currentTrip();if(!t)return;const n=document.getElementById('d-name').value.trim();if(!n)return;t.docs.push({id:Date.now(),name:n,val:document.getElementById('d-val').value.trim()});document.getElementById('d-name').value='';document.getElementById('d-val').value='';renderDocs();debouncedSave(t.id);}
+function addDoc(){const t=currentTrip();if(!t)return;const n=document.getElementById('d-name').value.trim();if(!n)return;t.docs.push({id:Date.now(),name:n,val:document.getElementById('d-val').value.trim()}); closeModal('modal-add-doc');document.getElementById('d-name').value='';document.getElementById('d-val').value='';renderDocs();debouncedSave(t.id);}
 function delDoc(id){const t=currentTrip();if(!t)return;t.docs=t.docs.filter(d=>d.id!==id);renderDocs();debouncedSave(t.id);}
 function renderDocs(){
   const t=currentTrip(); if(!t) return;
   document.getElementById('docs-list').innerHTML=t.docs.map(d=>`<div class="doc-row glass"><div class="doc-key">${esc(d.name)}</div><div class="doc-val">${esc(d.val)}</div><button class="doc-del" onclick="delDoc(${d.id})">×</button></div>`).join('');
-  document.getElementById('docs-empty').style.display=t.docs.length?'none':'block';
+  const newDocRow=`<div class="trip-card-new" onclick="openAddDoc()" style="min-height:80px;flex-direction:row;justify-content:flex-start;gap:var(--space-3);padding:var(--space-4) var(--space-6);border-radius:var(--radius-sm);margin-top:var(--space-2);"><div class="trip-card-new-icon" style="width:36px;height:36px;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div><div class="trip-card-new-label" style="text-align:left;">Add document</div><div class="trip-card-new-sub" style="text-align:left;">Booking ref, passport, insurance…</div></div></div>`;
+  document.getElementById('docs-list').innerHTML+=newDocRow;
+  document.getElementById('docs-empty').style.display='none';
   document.getElementById('c-docs').textContent=t.docs.length+' saved';
 }
 function saveNotes(){const t=currentTrip();if(!t)return;t.notes=document.getElementById('notes').value;debouncedSave(t.id);}
 
 // ── CHECKLIST ──
-function addCheck(){const t=currentTrip();if(!t)return;const text=document.getElementById('ck-text').value.trim();if(!text)return;t.checks.push({id:Date.now(),text,done:false});document.getElementById('ck-text').value='';renderChecks();debouncedSave(t.id);}
+function addCheck(){const t=currentTrip();if(!t)return;const text=document.getElementById('ck-text').value.trim();if(!text)return;t.checks.push({id:Date.now(),text,done:false}); closeModal('modal-add-task');document.getElementById('ck-text').value='';renderChecks();debouncedSave(t.id);}
 function togCheck(id){const t=currentTrip();if(!t)return;const c=t.checks.find(x=>x.id===id);if(c)c.done=!c.done;renderChecks();debouncedSave(t.id);}
 function delCheck(id){const t=currentTrip();if(!t)return;t.checks=t.checks.filter(c=>c.id!==id);renderChecks();debouncedSave(t.id);}
 function renderChecks(){
@@ -1354,14 +1402,17 @@ function renderChecks(){
   document.getElementById('check-list').innerHTML=sorted.map(c=>`<div class="check-item"><input type="checkbox" id="ck${c.id}" ${c.done?'checked':''} onchange="togCheck(${c.id})"/><label for="ck${c.id}" class="${c.done?'done':''}">${esc(c.text)}</label><button class="cd" onclick="delCheck(${c.id})">×</button></div>`).join('');
   const done=t.checks.filter(c=>c.done).length;
   document.getElementById('c-checks').textContent=`${t.checks.length} tasks · ${done} done`;
-  document.getElementById('check-empty').style.display=t.checks.length?'none':'block';
+  const newCheckRow=`<div class="trip-card-new" onclick="openAddTask()" style="min-height:64px;flex-direction:row;justify-content:flex-start;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);margin-top:var(--space-2);"><div class="trip-card-new-icon" style="width:32px;height:32px;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="trip-card-new-label" style="text-align:left;">Add task</div></div>`;
+  document.getElementById('check-list').innerHTML+=newCheckRow;
+  document.getElementById('check-empty').style.display='none';
 }
 
 // ── JOURNAL ──
 function initJournalDate(){const el=document.getElementById('j-date');if(el)el.value=new Date().toISOString().split('T')[0];}
-document.getElementById('j-body').addEventListener('input',function(){
-  const words=this.value.trim()?this.value.trim().split(/\s+/).length:0;
+document.addEventListener('input',function(ev){const el=ev.target; if(el.id!=='j-body') return; (function(){
+  const words=el.value.trim()?el.value.trim().split(/\s+/).length:0;
   document.getElementById('j-count').textContent=words+(words===1?' word':' words');
+  })();
 });
 function addJournalEntry(){
   const t=currentTrip(); if(!t) return;
@@ -1369,7 +1420,7 @@ function addJournalEntry(){
   const body=document.getElementById('j-body').value.trim();
   const date=document.getElementById('j-date').value;
   if(!title&&!body) return;
-  t.journal.unshift({id:Date.now(),title:title||'Untitled',body,date:date||new Date().toISOString().split('T')[0]});
+  t.journal.unshift({id:Date.now(),title:title||'Untitled',body,date:date||new Date().toISOString().split('T')[0]}); closeModal('modal-add-journal');
   document.getElementById('j-title').value='';document.getElementById('j-body').value='';
   document.getElementById('j-count').textContent='0 words';
   initJournalDate(); renderJournal(); debouncedSave(t.id);
@@ -1388,7 +1439,9 @@ function renderJournal(){
       ${j.body?`<div class="journal-entry-body">${esc(j.body)}</div>`:''}
     </div>`;
   }).join('');
-  document.getElementById('journal-empty').style.display=t.journal.length?'none':'block';
+  const newJournalCard=`<div class="trip-card-new" onclick="openAddJournal()" style="margin-top:var(--space-4);"><div class="trip-card-new-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="trip-card-new-label">Write an entry</div><div class="trip-card-new-sub">Capture your memories</div></div>`;
+  document.getElementById('journal-list').innerHTML+=newJournalCard;
+  document.getElementById('journal-empty').style.display='none';
   document.getElementById('c-journal').textContent=t.journal.length+' '+(t.journal.length===1?'entry':'entries');
 }
 
@@ -1422,7 +1475,9 @@ function renderPictures(){
       <img src="${p.src}" alt="${esc(p.name)}"/>
       <button class="pic-item-del" onclick="event.stopPropagation();delPicture(${p.id})">×</button>
     </div>`).join('');
-  document.getElementById('pictures-empty').style.display=t.pictures.length?'none':'block';
+  const newPicCard=`<div class="trip-card-new pic-item" onclick="document.getElementById('pic-input').click()" style="min-height:200px;"><div class="trip-card-new-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="trip-card-new-label">Add photos</div></div>`;
+  document.getElementById('pictures-grid').innerHTML+=newPicCard;
+  document.getElementById('pictures-empty').style.display='none';
   document.getElementById('c-pictures').textContent=t.pictures.length+' '+(t.pictures.length===1?'photo':'photos');
 }
 
