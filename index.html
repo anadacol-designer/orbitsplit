@@ -137,14 +137,18 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 
 /* ── PLANNER ── */
 .planner-hero{position:relative;z-index:10;padding:var(--space-8) var(--space-8) var(--space-6);border-bottom:1px solid var(--glass-border);display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-6);flex-wrap:wrap;}
+.edit-trip-btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-ui);font-size:var(--text-xs);font-weight:var(--weight-medium);color:var(--fg-disabled);background:none;border:1px solid transparent;border-radius:var(--radius-full);padding:6px 12px;cursor:pointer;transition:all var(--dur-fast) var(--ease-glass);margin-top:6px;flex-shrink:0;}
+.edit-trip-btn:hover{color:var(--fg-secondary);border-color:var(--glass-border);background:var(--glass-xs);}
 .planner-eyebrow{font-size:var(--text-2xs);font-weight:var(--weight-semibold);letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:var(--space-2);}
 .planner-title{font-family:var(--font-display);font-size:clamp(24px,3.5vw,40px);font-weight:var(--weight-bold);line-height:1.05;}
 .planner-title span{color:var(--orange);font-style:italic;}
 .planner-dates{font-size:var(--text-xs);color:var(--fg-tertiary);font-family:var(--font-mono);margin-top:var(--space-2);}
-.planner-tabs{position:sticky;top:62px;z-index:100;display:flex;gap:var(--space-1);padding:var(--space-3) var(--space-8);background:oklch(8% 0.02 250/0.75);backdrop-filter:var(--blur-md);-webkit-backdrop-filter:var(--blur-md);border-bottom:1px solid var(--glass-border);}
-.planner-tab{font-family:var(--font-ui);font-size:var(--text-xs);font-weight:var(--weight-medium);letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-tertiary);background:none;border:none;padding:var(--space-2) var(--space-3);border-radius:var(--radius-xs);cursor:pointer;transition:all var(--dur-fast) var(--ease-glass);}
-.planner-tab:hover{color:var(--fg-secondary);background:var(--glass-xs);}
-.planner-tab.active{color:var(--fg-primary);background:var(--glass-sm);}
+.planner-tabs{padding:var(--space-6) var(--space-8) 0;display:flex;}
+.tab-bar{display:flex;gap:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:5px;overflow-x:auto;scrollbar-width:none;}
+.tab-bar::-webkit-scrollbar{display:none;}
+.planner-tab{padding:8px 18px;border-radius:12px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);cursor:pointer;transition:all 200ms cubic-bezier(0.23,1,0.32,1);background:none;border:none;white-space:nowrap;}
+.planner-tab:hover{color:rgba(255,255,255,0.7);}
+.planner-tab.active{background:rgba(255,255,255,0.12);color:white;box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);}
 .planner-section{display:none;}
 .planner-section.active{display:block;animation:fadeUp var(--dur-base) var(--ease-glass);}
 
@@ -289,7 +293,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
   .metrics{grid-template-columns:1fr 1fr;}
   .exp-split{display:none;}
   .trips-grid{grid-template-columns:1fr;}
-  .planner-tabs{padding:var(--space-3) var(--space-6);overflow-x:auto;}
+  .planner-tabs{padding:var(--space-4) var(--space-6) 0;}
 }
 </style>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBuHbx6UUs5I7XTjRE3MoMnDOZv6ioTF_k&libraries=places&callback=initMaps" async defer></script>
@@ -672,7 +676,13 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>All trips
         </button>
         <div class="planner-eyebrow" id="pl-eyebrow">Trip</div>
-        <div class="planner-title" id="pl-title"></div>
+        <div style="display:flex;align-items:flex-start;gap:var(--space-3);">
+          <div class="planner-title" id="pl-title" style="flex:1;"></div>
+          <button class="edit-trip-btn" onclick="openEditTrip(currentTripId)" title="Edit trip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+        </div>
         <div class="planner-dates" id="pl-dates"></div>
       </div>
       <div style="display:flex;gap:var(--space-8);align-items:flex-end;">
@@ -681,33 +691,33 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
       </div>
     </div>
     <div class="planner-tabs" id="planner-tabs">
-      <button class="planner-tab active" data-psec="places">Places</button>
-      <button class="planner-tab" data-psec="expenses">Expenses</button>
-      <button class="planner-tab" data-psec="docs">Documents</button>
-      <button class="planner-tab" data-psec="checklist">Checklist</button>
-      <button class="planner-tab" data-psec="journal">Journal</button>
-      <button class="planner-tab" data-psec="pictures">Pictures</button>
+      <div class="tab-bar">
+        <button class="planner-tab active" data-psec="places">Places</button>
+        <button class="planner-tab" data-psec="expenses">Expenses</button>
+        <button class="planner-tab" data-psec="docs">Documents</button>
+        <button class="planner-tab" data-psec="checklist">Checklist</button>
+        <button class="planner-tab" data-psec="journal">Journal</button>
+        <button class="planner-tab" data-psec="pictures">Pictures</button>
+      </div>
     </div>
     <div class="main">
 
       <!-- Places -->
       <div class="planner-section active" id="psec-places">
-        <div class="sh"><h2>Places &amp; bookings</h2><span class="ct" id="c-places">0 saved</span></div>
-        <div class="add-form glass">
-          <div class="field" style="flex:2;min-width:200px;"><label>Name</label><input type="text" id="p-name" placeholder="Hotel, restaurant, museum…"/></div>
-          <div class="field" style="flex:2;min-width:180px;"><label>Address</label><input type="text" id="p-addr" placeholder="Start typing an address…" autocomplete="off"/></div>
-          <div class="field" style="flex:2;min-width:180px;"><label>Booking reference</label><input type="text" id="p-ref" placeholder="e.g. RES-4821, confirmation no."/></div>
-          <div class="field" style="max-width:145px;"><label>Category</label>
-            <select id="p-cat"><option value="hotel">Hotel</option><option value="flight">Flight</option><option value="restaurant">Restaurant</option><option value="activity">Activity</option><option value="transport">Transport</option><option value="other">Other</option></select>
-          </div>
-          <div class="field" style="max-width:145px;"><label>Start date</label><input type="date" id="p-start" oninput="syncEndDate('p-start','p-end')"/></div>
-          <div class="field" style="max-width:145px;"><label>End date</label><input type="date" id="p-end"/></div>
-          <button class="btn btn-primary btn-inline" onclick="addPlace()">
+        <div class="sh">
+          <h2>Places &amp; bookings</h2>
+          <span class="ct" id="c-places">0 saved</span>
+          <button class="btn btn-primary btn-inline" onclick="openAddPlace()" style="margin-left:auto;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add place
           </button>
         </div>
         <div class="cards" id="places-list"></div>
-        <div class="empty" id="places-empty">Nothing here yet.<br/>Start by adding your first hotel, flight, or restaurant.</div>
+        <div class="empty" id="places-empty">
+          Nothing here yet.<br/>
+          <button class="btn btn-primary btn-inline" onclick="openAddPlace()" style="margin-top:16px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add your first place
+          </button>
+        </div>
       </div>
 
       <!-- Expenses -->
@@ -744,10 +754,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
         </div>
         <div id="docs-list"></div>
         <div class="empty" id="docs-empty">No documents saved yet.</div>
-        <div class="notes-wrap">
-          <div class="notes-label">Trip notes</div>
-          <textarea class="glass" style="border-radius:var(--radius-sm);" id="notes" placeholder="Jot down anything — packing tips, local advice, reminders…" oninput="saveNotes()"></textarea>
-        </div>
+
       </div>
 
       <!-- Checklist -->
@@ -803,6 +810,53 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
 </div><!-- end app -->
 
+<!-- ADD PLACE MODAL -->
+<div class="modal-overlay" id="modal-add-place" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Add place</div>
+    <button class="modal-close" onclick="closeAddPlace()">×</button>
+    <div class="modal-fields">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="p-name" placeholder="Hotel, restaurant, museum…" maxlength="80"/>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="p-cat">
+          <option value="hotel">Hotel</option>
+          <option value="flight">Flight</option>
+          <option value="restaurant">Restaurant</option>
+          <option value="activity">Activity</option>
+          <option value="transport">Transport</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Address</label>
+        <input type="text" id="p-addr" placeholder="Start typing an address…" autocomplete="off"/>
+      </div>
+      <div class="field">
+        <label>Booking reference</label>
+        <input type="text" id="p-ref" placeholder="e.g. RES-4821, confirmation no."/>
+      </div>
+      <div class="field">
+        <label>Start date</label>
+        <input type="date" id="p-start" oninput="syncEndDate('p-start','p-end')"/>
+      </div>
+      <div class="field">
+        <label>End date</label>
+        <input type="date" id="p-end"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAddPlace()">Cancel</button>
+      <button class="btn btn-primary btn-inline" onclick="addPlace()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Save place
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- MODALS -->
 <div class="modal-overlay" id="modal-new" style="display:none;">
   <div class="modal">
@@ -811,6 +865,10 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
     <div class="modal-fields">
       <div class="field"><label>Trip name</label><input type="text" id="nt-name" placeholder="e.g. Summer in Portugal" maxlength="50"/></div>
       <div class="field"><label>Destination</label><input type="text" id="nt-dest" placeholder="e.g. Lisbon, Porto" maxlength="100"/></div>
+      <div class="field">
+        <label>Who's joining?</label>
+        <input type="text" id="nt-travellers" placeholder="e.g. Mom, João, Sara (comma separated)" maxlength="200"/>
+      </div>
       <div class="field"><label>Start date</label><input type="date" id="nt-start" oninput="syncEndDate('nt-start','nt-end')"/></div>
       <div class="field"><label>End date</label><input type="date" id="nt-end"/></div>
     </div>
@@ -1080,6 +1138,7 @@ function renderDashboard(){
         <div><div class="trip-stat-val">${places}</div><div class="trip-stat-label">Places</div></div>
         <div><div class="trip-stat-val">${done}/${checks}</div><div class="trip-stat-label">Tasks done</div></div>
       </div>
+      ${(t.travellers||[]).length ? `<div class="trip-card-travellers">${(t.travellers||[]).map(name=>`<div class="traveller-pill" title="${esc(name)}">${esc(name[0].toUpperCase())}</div>`).join('')}<span class="traveller-names">${(t.travellers||[]).map(n=>esc(n)).join(', ')}</span></div>` : ''}
       <div class="trip-card-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
     </div>`;
   }).join('');
@@ -1092,7 +1151,7 @@ function renderDashboard(){
 
 // ── NEW TRIP ──
 function openNewTrip(){showEl('modal-new');setTimeout(()=>document.getElementById('nt-name').focus(),50);}
-function closeNewTrip(){hideEl('modal-new');['nt-name','nt-dest','nt-start','nt-end'].forEach(id=>document.getElementById(id).value='');}
+function closeNewTrip(){hideEl('modal-new');['nt-name','nt-dest','nt-travellers','nt-start','nt-end'].forEach(id=>document.getElementById(id).value='');}
 document.getElementById('modal-new').addEventListener('click',function(e){if(e.target===this)closeNewTrip();});
 
 async function createTrip(){
@@ -1100,11 +1159,14 @@ async function createTrip(){
   if(!name){document.getElementById('nt-name').focus();return;}
   const btn=document.getElementById('create-trip-btn');
   btn.disabled=true;
+  const rawT = document.getElementById('nt-travellers').value;
+  const travellers = rawT ? rawT.split(',').map(s=>s.trim()).filter(Boolean) : [];
   const trip={
     id:crypto.randomUUID(), name,
     destination:document.getElementById('nt-dest').value.trim(),
     startDate:document.getElementById('nt-start').value,
     endDate:document.getElementById('nt-end').value,
+    travellers,
     places:[],expenses:[],docs:[],checks:[],journal:[],pictures:[],notes:'',dataId:null
   };
   trips.unshift(trip);
@@ -1119,6 +1181,7 @@ function openEditTrip(id){
   editingTripId=id; const t=tripById(id);
   document.getElementById('et-name').value=t.name;
   document.getElementById('et-dest').value=t.destination||'';
+  document.getElementById('et-travellers').value=(t.travellers||[]).join(', ');
   document.getElementById('et-start').value=t.startDate||'';
   document.getElementById('et-end').value=t.endDate||'';
   showEl('modal-edit');
@@ -1132,6 +1195,8 @@ async function saveEditTrip(){
   t.destination=document.getElementById('et-dest').value.trim();
   t.startDate=document.getElementById('et-start').value;
   t.endDate=document.getElementById('et-end').value;
+  const rawET = document.getElementById('et-travellers').value;
+  t.travellers = rawET ? rawET.split(',').map(s=>s.trim()).filter(Boolean) : [];
   closeEditTrip();
   await saveTrip(t.id);
   if(currentTripId===t.id) renderPlanner();
@@ -1172,11 +1237,26 @@ function renderPlanner(){
 }
 
 // ── PLACES ──
+function openAddPlace(){
+  document.getElementById('modal-add-place').style.display='flex';
+  setTimeout(()=>{
+    document.getElementById('p-name').focus();
+    autocompleteInstance = null;
+    attachAutocomplete();
+  }, 50);
+}
+function closeAddPlace(){
+  document.getElementById('modal-add-place').style.display='none';
+  ['p-name','p-addr','p-ref','p-start','p-end'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-cat').value='hotel';
+}
+document.getElementById('modal-add-place').addEventListener('click',function(e){if(e.target===this)closeAddPlace();});
+
 function addPlace(){
   const t=currentTrip(); if(!t) return;
   const n=document.getElementById('p-name').value.trim(); if(!n) return;
   t.places.push({id:Date.now(),name:n,addr:document.getElementById('p-addr').value.trim(),ref:document.getElementById('p-ref').value.trim(),cat:document.getElementById('p-cat').value,startDate:document.getElementById('p-start').value,endDate:document.getElementById('p-end').value});
-  ['p-name','p-addr','p-ref','p-start','p-end'].forEach(id=>document.getElementById(id).value='');
+  closeAddPlace();
   renderPlaces(); debouncedSave(t.id);
   document.getElementById('pl-places').textContent=t.places.length;
 }
@@ -1202,23 +1282,52 @@ function addExpense(){
   const n=document.getElementById('e-name').value.trim();
   const a=parseFloat(document.getElementById('e-amt').value);
   if(!n||isNaN(a)||a<=0) return;
-  t.expenses.push({id:Date.now(),name:n,amount:a,split:document.getElementById('e-split').value});
+  const splitVal=document.getElementById('e-split').value||'Everyone'; t.expenses.push({id:Date.now(),name:n,amount:a,split:splitVal});
   document.getElementById('e-name').value='';document.getElementById('e-amt').value='';
   renderExpenses(); debouncedSave(t.id);
   document.getElementById('pl-spend').textContent='€'+t.expenses.reduce((s,e)=>s+e.amount,0).toFixed(0);
 }
 function delExp(id){const t=currentTrip();if(!t)return;t.expenses=t.expenses.filter(e=>e.id!==id);renderExpenses();debouncedSave(t.id);document.getElementById('pl-spend').textContent='€'+t.expenses.reduce((s,e)=>s+e.amount,0).toFixed(0);}
+function getTravellers(){
+  const t=currentTrip(); if(!t) return ['You'];
+  return ['Everyone',...(t.travellers&&t.travellers.length?t.travellers:['You'])];
+}
+function buildSplitOptions(selectedVal){
+  const opts=getTravellers();
+  return opts.map(o=>`<option value="${esc(o)}" ${selectedVal===o?'selected':''}>${esc(o)}</option>`).join('');
+}
 function renderExpenses(){
   const t=currentTrip(); if(!t) return;
-  let tot=0,you=0,mom=0;
-  t.expenses.forEach(e=>{tot+=e.amount;if(e.split==='shared'){you+=e.amount/2;mom+=e.amount/2;}else if(e.split==='you')you+=e.amount;else mom+=e.amount;});
+  // Rebuild split select options
+  const splitEl=document.getElementById('e-split');
+  if(splitEl) splitEl.innerHTML=buildSplitOptions(splitEl.value);
+  // Compute per-person totals
+  const travellers=t.travellers&&t.travellers.length?t.travellers:['You'];
+  let tot=0;
+  const perPerson={};
+  travellers.forEach(n=>{perPerson[n]=0;});
+  t.expenses.forEach(e=>{
+    tot+=e.amount;
+    if(e.split==='Everyone'){
+      travellers.forEach(n=>{perPerson[n]=(perPerson[n]||0)+e.amount/travellers.length;});
+    } else {
+      perPerson[e.split]=(perPerson[e.split]||0)+e.amount;
+    }
+  });
   document.getElementById('m-total').textContent='€'+tot.toFixed(2);
-  document.getElementById('m-you').textContent='€'+you.toFixed(2);
-  document.getElementById('m-mom').textContent='€'+mom.toFixed(2);
+  // Update metric cards dynamically
+  const metricsEl=document.querySelector('.metrics');
+  if(metricsEl){
+    const cards=[`<div class="metric glass hi"><div class="ml">Total spent</div><div class="mv" id="m-total">€${tot.toFixed(2)}</div></div>`];
+    travellers.forEach(name=>{
+      cards.push(`<div class="metric glass"><div class="ml">${esc(name)}</div><div class="mv">€${(perPerson[name]||0).toFixed(2)}</div></div>`);
+    });
+    metricsEl.innerHTML=cards.join('');
+  }
   document.getElementById('c-expenses').textContent=t.expenses.length+' entries';
   document.getElementById('exp-list').innerHTML=t.expenses.map(e=>`
     <div class="exp-row glass"><div class="exp-name">${esc(e.name)}</div>
-    <div class="exp-split">${e.split==='shared'?'Split equally':e.split==='you'?'You only':'Mom only'}</div>
+    <div class="exp-split">${esc(e.split)}</div>
     <div class="exp-amt">€${e.amount.toFixed(2)}</div>
     <button class="exp-del" onclick="delExp(${e.id})">×</button></div>`).join('');
   document.getElementById('exp-empty').style.display=t.expenses.length?'none':'block';
