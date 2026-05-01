@@ -409,6 +409,9 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
       <div class="auth-divider"><div class="auth-divider-line"></div><div class="auth-divider-text">or</div><div class="auth-divider-line"></div></div>
       <div class="auth-switch">Already have an account? <button onclick="showLogin()">Sign in</button></div>
     </div>
+    <div style="text-align:center;margin-top:var(--space-6);padding-top:var(--space-4);border-top:1px solid var(--glass-border);">
+      <a href="/privacy.html" style="color:var(--fg-disabled);font-size:var(--text-2xs);font-family:var(--font-ui);text-decoration:none;letter-spacing:0.05em;" target="_blank">Privacy Policy</a>
+    </div>
   </div>
 </div>
 
@@ -1763,5 +1766,13 @@ function syncEndDate(startId, endId) {
 init();
 
 </script>
+
+<!-- FOOTER -->
+<footer style="position:relative;z-index:10;border-top:1px solid var(--glass-border);padding:var(--space-6) var(--space-8);display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;">
+  <div style="font-size:var(--text-2xs);color:var(--fg-disabled);">© 2025 OrbitSplit</div>
+  <div style="display:flex;gap:var(--space-6);">
+    <a href="/privacy.html" style="font-size:var(--text-2xs);color:var(--fg-disabled);text-decoration:none;transition:color var(--dur-fast);" onmouseover="this.style.color='var(--fg-secondary)'" onmouseout="this.style.color='var(--fg-disabled)'">Privacy Policy</a>
+  </div>
+</footer>
 </body>
 </html>
