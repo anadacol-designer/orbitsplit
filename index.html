@@ -36,7 +36,7 @@
   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-6:24px; --space-8:32px; --space-12:48px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--font-ui);font-size:var(--text-sm);color:var(--fg-primary);background:var(--color-base);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+body{font-family:var(--font-ui);font-size:var(--text-sm);color:var(--fg-primary);background:var(--color-base);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;}
 body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:0.045;mix-blend-mode:overlay;}
 
 .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
@@ -50,7 +50,7 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 .glass::after{content:'';position:absolute;inset:0;border-radius:inherit;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:0.07;mix-blend-mode:overlay;pointer-events:none;}
 
 /* ── AUTH SCREEN ── */
-.auth-screen{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:var(--space-6);}
+.auth-screen{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--space-6);}
 .auth-card{width:100%;max-width:420px;border-radius:var(--radius-lg);padding:var(--space-8);box-shadow:var(--top-shine),var(--inner-glow),0 40px 80px rgba(0,0,0,0.5);}
 .auth-logo{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-8);}
 .auth-logo-type{font-family:var(--font-display);font-size:22px;font-weight:var(--weight-bold);color:var(--fg-primary);letter-spacing:0.02em;}
@@ -67,7 +67,8 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 .auth-success{font-size:var(--text-xs);color:oklch(80% 0.18 168);background:oklch(76% 0.18 168/0.12);border:1px solid oklch(76% 0.18 168/0.25);border-radius:var(--radius-xs);padding:var(--space-3) var(--space-4);display:none;}
 
 /* ── NAV ── */
-.nav{position:sticky;top:0;z-index:200;height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-8);background:oklch(8% 0.02 250/0.75);backdrop-filter:var(--blur-md);-webkit-backdrop-filter:var(--blur-md);border-bottom:1px solid var(--glass-border);}
+.nav{position:sticky;top:12px;z-index:200;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6);border:1px solid transparent;border-radius:var(--radius-lg);margin:12px var(--space-6) 0;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;transition:background 300ms ease,border-color 300ms ease,backdrop-filter 300ms ease;}
+.nav-floating{background:var(--glass-sm)!important;backdrop-filter:var(--blur-md)!important;-webkit-backdrop-filter:var(--blur-md)!important;border-color:var(--glass-border)!important;}
 .logo{display:flex;align-items:center;gap:var(--space-2);text-decoration:none;cursor:pointer;border:none;background:none;}
 .logo-type{font-family:var(--font-display);font-size:18px;font-weight:var(--weight-bold);color:var(--fg-primary);letter-spacing:0.02em;}
 .logo-type span{color:var(--orange);}
@@ -288,6 +289,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
   .modal-actions .btn{flex:1;min-width:120px;}
   .hamburger{display:block;}
   .nav-email{display:none;}
+  .nav{margin:8px var(--space-4) 0;top:8px;}
   .dashboard-hero,.planner-hero{padding:var(--space-8) var(--space-6) var(--space-6);}
   .main{padding:var(--space-6);}
   .add-form{padding:var(--space-4);}
@@ -409,14 +411,14 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
       <div class="auth-divider"><div class="auth-divider-line"></div><div class="auth-divider-text">or</div><div class="auth-divider-line"></div></div>
       <div class="auth-switch">Already have an account? <button onclick="showLogin()">Sign in</button></div>
     </div>
-    <div style="text-align:center;margin-top:var(--space-6);padding-top:var(--space-4);border-top:1px solid var(--glass-border);">
-      <a href="/privacy.html" style="color:var(--fg-disabled);font-size:var(--text-2xs);font-family:var(--font-ui);text-decoration:none;letter-spacing:0.05em;" target="_blank">Privacy Policy</a>
+  <div style="margin-top:var(--space-6);padding-top:var(--space-4);border-top:1px solid var(--glass-border);text-align:center;">
+      <a href="/privacy.html" style="font-size:var(--text-2xs);color:var(--fg-disabled);font-family:var(--font-ui);text-decoration:none;letter-spacing:0.05em;" target="_blank">Privacy Policy</a>
     </div>
   </div>
 </div>
 
 <!-- NAV -->
-<nav class="nav glass">
+<nav class="nav" id="main-nav">
   <button onclick="goHome()" style="display:flex;align-items:center;background:none;border:none;cursor:pointer;padding:0;">
     <svg width="143" height="28" viewBox="0 0 143 28" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_615_126N)">
@@ -480,7 +482,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 </nav>
 
 <!-- APP -->
-<div id="app" style="display:none;">
+<div id="app" style="display:none;flex:1;display:none;flex-direction:column;">
 
 <!-- DASHBOARD -->
   <div class="view active" id="view-dashboard">
@@ -1075,9 +1077,10 @@ async function signUp(){
 async function signOut(){
   document.getElementById('nav-right').style.display='none';
   document.getElementById('hamburger').style.display='none';
+  document.getElementById('main-nav').classList.remove('nav-floating');
   await sb.auth.signOut();
   currentUser=null; trips=[];
-  hideEl('app'); showEl('auth-screen'); showLogin();
+  hideEl('app'); hideEl('site-footer'); showEl('auth-screen'); showLogin();
 }
 
 // ── INIT ──
@@ -1098,15 +1101,17 @@ async function init(){
       showApp();
     } else if(!session&&currentUser){
       currentUser=null; trips=[];
-      hideEl('app'); showEl('auth-screen');
+      hideEl('app'); hideEl('site-footer'); showEl('auth-screen');
     }
   });
 }
 
 async function showApp(){
   showEl('app');
+  showEl('site-footer');
   document.getElementById('nav-right').style.display='';
   document.getElementById('hamburger').style.display='';
+  document.getElementById('main-nav').classList.add('nav-floating');
   // Update nav
   const email=currentUser.email||'';
   const displayName = currentUser?.user_metadata?.display_name || '';
@@ -1767,12 +1772,14 @@ init();
 
 </script>
 
+
 <!-- FOOTER -->
-<footer style="position:relative;z-index:10;border-top:1px solid var(--glass-border);padding:var(--space-6) var(--space-8);display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;">
-  <div style="font-size:var(--text-2xs);color:var(--fg-disabled);">© 2025 OrbitSplit</div>
-  <div style="display:flex;gap:var(--space-6);">
-    <a href="/privacy.html" style="font-size:var(--text-2xs);color:var(--fg-disabled);text-decoration:none;transition:color var(--dur-fast);" onmouseover="this.style.color='var(--fg-secondary)'" onmouseout="this.style.color='var(--fg-disabled)'">Privacy Policy</a>
+<footer id="site-footer" style="display:none;" style="position:relative;z-index:10;border-top:1px solid var(--glass-border);padding:var(--space-6) var(--space-8);display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;">
+  <div style="font-size:var(--text-2xs);color:var(--fg-disabled);font-family:var(--font-ui);">© <span id="footer-year"></span> OrbitSplit</div>
+  <div style="display:flex;gap:var(--space-5);">
+    <a href="/privacy.html" style="font-size:var(--text-2xs);color:var(--fg-disabled);font-family:var(--font-ui);text-decoration:none;" onmouseover="this.style.color='var(--fg-secondary)'" onmouseout="this.style.color='var(--fg-disabled)'">Privacy Policy</a>
   </div>
 </footer>
+<script>document.getElementById('footer-year').textContent=new Date().getFullYear();</script>
 </body>
 </html>
