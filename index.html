@@ -126,7 +126,7 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(8,8,14,0.75);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;padding:var(--space-4);animation:fadeIn 200ms ease;}
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(8,8,14,0.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:var(--space-6);animation:fadeIn 200ms ease;}
 .modal{background:#16161F;border:1px solid var(--glass-border-hi);border-radius:var(--radius-lg);padding:var(--space-8);width:100%;max-width:480px;box-shadow:var(--top-shine),0 40px 80px rgba(0,0,0,0.6);position:relative;overflow:hidden;}
 .modal::after{content:'';position:absolute;inset:0;border-radius:inherit;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:0.07;mix-blend-mode:overlay;pointer-events:none;}
 .modal-title{font-family:var(--font-display);font-size:var(--text-xl);font-weight:var(--weight-semibold);margin-bottom:var(--space-6);position:relative;}
@@ -249,6 +249,16 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 .pic-lightbox img{max-width:100%;max-height:100%;border-radius:var(--radius-sm);object-fit:contain;box-shadow:0 40px 80px rgba(0,0,0,0.8);}
 .pic-lightbox-close{position:fixed;top:var(--space-6);right:var(--space-6);width:40px;height:40px;border-radius:var(--radius-full);background:var(--glass-md);border:1px solid var(--glass-border-hi);color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(16px);}
 
+/* ── MAPS AUTOCOMPLETE ── */
+.pac-container { border-radius: var(--radius-sm) !important; border: 1px solid var(--glass-border-hi) !important; background: #16161F !important; box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important; font-family: var(--font-ui) !important; margin-top: 4px !important; z-index: 9999 !important; }
+.pac-item { padding: 10px 14px !important; font-size: var(--text-sm) !important; color: var(--fg-secondary) !important; border-top: 1px solid var(--glass-border) !important; cursor: pointer !important; background: transparent !important; }
+.pac-item:hover, .pac-item-selected { background: var(--glass-sm) !important; color: var(--fg-primary) !important; }
+.pac-item-query { color: var(--fg-primary) !important; font-weight: var(--weight-medium) !important; }
+.pac-icon { display: none !important; }
+.pac-matched { color: var(--orange-hi) !important; }
+.map-link { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-xs); color: var(--blue-hi); text-decoration: none; margin-top: var(--space-2); transition: color var(--dur-fast); }
+.map-link:hover { color: var(--blue); }
+
 /* ── CONTEXT MENU ── */
 .ctx-menu{position:fixed;z-index:600;background:#1C1C28;border:1px solid var(--glass-border-hi);border-radius:var(--radius-sm);padding:var(--space-2);min-width:160px;box-shadow:0 20px 60px rgba(0,0,0,0.6);animation:fadeUp 150ms var(--ease-glass);}
 .ctx-item{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-xs);font-size:var(--text-sm);color:var(--fg-secondary);cursor:pointer;transition:all var(--dur-fast);border:none;background:none;width:100%;font-family:var(--font-ui);}
@@ -282,6 +292,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
   .planner-tabs{padding:var(--space-3) var(--space-6);overflow-x:auto;}
 }
 </style>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBuHbx6UUs5I7XTjRE3MoMnDOZv6ioTF_k&libraries=places&callback=initMaps" async defer></script>
 </head>
 <body>
 
@@ -656,19 +667,17 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
   <!-- PLANNER -->
   <div class="view" id="view-planner">
     <div class="planner-hero">
-      <div>
+      <div style="flex:1;">
+        <button class="back-btn" onclick="goHome()" style="margin-bottom:var(--space-4);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>All trips
+        </button>
         <div class="planner-eyebrow" id="pl-eyebrow">Trip</div>
         <div class="planner-title" id="pl-title"></div>
         <div class="planner-dates" id="pl-dates"></div>
       </div>
-      <div style="display:flex;align-items:flex-end;gap:var(--space-6);flex-wrap:wrap;">
-        <div style="display:flex;gap:var(--space-8);">
-          <div><div class="stat-val" id="pl-places">0</div><div class="stat-label">Places</div></div>
-          <div><div class="stat-val" id="pl-spend">€0</div><div class="stat-label">Spend</div></div>
-        </div>
-        <button class="back-btn" onclick="goHome()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>All trips
-        </button>
+      <div style="display:flex;gap:var(--space-8);align-items:flex-end;">
+        <div><div class="stat-val" id="pl-places">0</div><div class="stat-label">Places</div></div>
+        <div><div class="stat-val" id="pl-spend">€0</div><div class="stat-label">Spend</div></div>
       </div>
     </div>
     <div class="planner-tabs" id="planner-tabs">
@@ -686,11 +695,13 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
         <div class="sh"><h2>Places &amp; bookings</h2><span class="ct" id="c-places">0 saved</span></div>
         <div class="add-form glass">
           <div class="field" style="flex:2;min-width:200px;"><label>Name</label><input type="text" id="p-name" placeholder="Hotel, restaurant, museum…"/></div>
-          <div class="field" style="flex:2;min-width:180px;"><label>Address / reference</label><input type="text" id="p-addr" placeholder="Address or booking ref"/></div>
+          <div class="field" style="flex:2;min-width:180px;"><label>Address</label><input type="text" id="p-addr" placeholder="Start typing an address…" autocomplete="off"/></div>
+          <div class="field" style="flex:2;min-width:180px;"><label>Booking reference</label><input type="text" id="p-ref" placeholder="e.g. RES-4821, confirmation no."/></div>
           <div class="field" style="max-width:145px;"><label>Category</label>
             <select id="p-cat"><option value="hotel">Hotel</option><option value="flight">Flight</option><option value="restaurant">Restaurant</option><option value="activity">Activity</option><option value="transport">Transport</option><option value="other">Other</option></select>
           </div>
-          <div class="field" style="max-width:145px;"><label>Date</label><input type="date" id="p-date"/></div>
+          <div class="field" style="max-width:145px;"><label>Start date</label><input type="date" id="p-start" oninput="syncEndDate('p-start','p-end')"/></div>
+          <div class="field" style="max-width:145px;"><label>End date</label><input type="date" id="p-end"/></div>
           <button class="btn btn-primary btn-inline" onclick="addPlace()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add place
           </button>
@@ -1016,6 +1027,8 @@ function goHome(){
   currentTripId=null; showView('dashboard'); renderDashboard();
 }
 function openTrip(id){
+  autocompleteInstance = null;
+  setTimeout(attachAutocomplete, 200);
   currentTripId=id; showView('planner'); renderPlanner();
   document.querySelectorAll('.planner-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.planner-section').forEach(s=>s.classList.remove('active'));
@@ -1162,21 +1175,22 @@ function renderPlanner(){
 function addPlace(){
   const t=currentTrip(); if(!t) return;
   const n=document.getElementById('p-name').value.trim(); if(!n) return;
-  t.places.push({id:Date.now(),name:n,addr:document.getElementById('p-addr').value.trim(),cat:document.getElementById('p-cat').value,date:document.getElementById('p-date').value});
-  ['p-name','p-addr','p-date'].forEach(id=>document.getElementById(id).value='');
+  t.places.push({id:Date.now(),name:n,addr:document.getElementById('p-addr').value.trim(),ref:document.getElementById('p-ref').value.trim(),cat:document.getElementById('p-cat').value,startDate:document.getElementById('p-start').value,endDate:document.getElementById('p-end').value});
+  ['p-name','p-addr','p-ref','p-start','p-end'].forEach(id=>document.getElementById(id).value='');
   renderPlaces(); debouncedSave(t.id);
   document.getElementById('pl-places').textContent=t.places.length;
 }
 function delPlace(id){const t=currentTrip();if(!t)return;t.places=t.places.filter(p=>p.id!==id);renderPlaces();debouncedSave(t.id);document.getElementById('pl-places').textContent=t.places.length;}
 function renderPlaces(){
   const t=currentTrip(); if(!t) return;
-  const sorted=[...t.places].sort((a,b)=>(a.date||'z')>(b.date||'z')?1:-1);
+  const sorted=[...t.places].sort((a,b)=>(a.startDate||a.date||'z')>(b.startDate||b.date||'z')?1:-1);
   document.getElementById('places-list').innerHTML=sorted.map(p=>`
     <div class="card glass"><button class="card-del" onclick="delPlace(${p.id})">×</button>
     <span class="badge b-${p.cat}">${catLbl(p.cat)}</span>
     <div class="card-title">${esc(p.name)}</div>
-    ${p.addr?`<div class="card-addr">${esc(p.addr)}</div>`:''}
-    ${p.date?`<div class="card-date">${fmtD(p.date)}</div>`:''}
+    ${p.addr?`<div class="card-addr"><a class="map-link" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.addr)}" target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(p.addr)}</a></div>`:''}
+    ${p.ref?`<div class="card-addr" style="color:var(--fg-tertiary);">${esc(p.ref)}</div>`:''}
+    ${(p.startDate||p.date)?`<div class="card-date">${fmtD(p.startDate||p.date)}${p.endDate&&p.endDate!==p.startDate?' — '+fmtD(p.endDate):''}</div>`:''}
     </div>`).join('');
   document.getElementById('places-empty').style.display=t.places.length?'none':'block';
   document.getElementById('c-places').textContent=t.places.length+' saved';
@@ -1302,6 +1316,42 @@ function renderPictures(){
   document.getElementById('pictures-empty').style.display=t.pictures.length?'none':'block';
   document.getElementById('c-pictures').textContent=t.pictures.length+' '+(t.pictures.length===1?'photo':'photos');
 }
+
+// ── GOOGLE MAPS AUTOCOMPLETE ──
+let mapsReady = false;
+let autocompleteInstance = null;
+
+function initMaps() {
+  mapsReady = true;
+  attachAutocomplete();
+}
+
+function attachAutocomplete() {
+  const input = document.getElementById('p-addr');
+  if (!input || !mapsReady || autocompleteInstance) return;
+  autocompleteInstance = new google.maps.places.Autocomplete(input, {
+    types: ['establishment', 'geocode'],
+    fields: ['formatted_address', 'name', 'geometry']
+  });
+  autocompleteInstance.addListener('place_changed', () => {
+    const place = autocompleteInstance.getPlace();
+    if (place.formatted_address) {
+      input.value = place.name && !place.formatted_address.startsWith(place.name)
+        ? place.name + ', ' + place.formatted_address
+        : place.formatted_address;
+    }
+  });
+}
+
+// Re-attach when switching to places tab
+document.querySelectorAll('.planner-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.psec === 'places') {
+      autocompleteInstance = null;
+      setTimeout(attachAutocomplete, 100);
+    }
+  });
+});
 
 function syncEndDate(startId, endId) {
   const start = document.getElementById(startId);
