@@ -62,7 +62,7 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 .auth-divider-line{flex:1;height:1px;background:var(--glass-border);}
 .auth-divider-text{font-size:var(--text-2xs);color:var(--fg-disabled);letter-spacing:0.08em;text-transform:uppercase;}
 .auth-switch{text-align:center;font-size:var(--text-xs);color:var(--fg-tertiary);}
-.auth-switch button{background:none;border:none;color:var(--orange-hi);cursor:pointer;font-family:var(--font-ui);font-size:var(--text-xs);font-weight:var(--weight-medium);text-decoration:underline;text-underline-offset:3px;}
+.auth-switch button{background:none;border:none;color:var(--lavender);cursor:pointer;font-family:var(--font-ui);font-size:var(--text-xs);font-weight:var(--weight-medium);text-decoration:none;}
 .auth-error{font-size:var(--text-xs);color:oklch(72% 0.22 18);background:oklch(65% 0.25 18/0.12);border:1px solid oklch(65% 0.25 18/0.25);border-radius:var(--radius-xs);padding:var(--space-3) var(--space-4);display:none;}
 .auth-success{font-size:var(--text-xs);color:oklch(80% 0.18 168);background:oklch(76% 0.18 168/0.12);border:1px solid oklch(76% 0.18 168/0.25);border-radius:var(--radius-xs);padding:var(--space-3) var(--space-4);display:none;}
 
@@ -377,8 +377,8 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
         <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"/></div>
       </div>
       <button class="btn btn-primary" id="login-btn" onclick="signIn()">Sign in</button>
-      <div style="text-align:center;margin-top:var(--space-3);">
-        <button onclick="showForgotPassword()" style="background:none;border:none;color:var(--fg-tertiary);cursor:pointer;font-family:var(--font-ui);font-size:var(--text-xs);text-decoration:underline;text-underline-offset:3px;">Forgot password?</button>
+      <div style="margin-top:var(--space-3);">
+        <button onclick="showForgotPassword()" style="background:none;border:none;font-family:var(--font-ui);font-size:var(--text-xs);color:var(--lavender);cursor:pointer;text-decoration:none;padding:0;">Forgot password?</button>
       </div>
       <div class="auth-divider"><div class="auth-divider-line"></div><div class="auth-divider-text">or</div><div class="auth-divider-line"></div></div>
       <div class="auth-switch">Don't have an account? <button onclick="showSignup()">Create one</button></div>
@@ -408,11 +408,12 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
         <div class="field"><label>Confirm password</label><input type="password" id="signup-confirm" placeholder="Repeat password" autocomplete="new-password"/></div>
       </div>
       <button class="btn btn-primary" id="signup-btn" onclick="signUp()">Create account</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:var(--space-3);">
+        <button onclick="showForgotPassword()" style="background:none;border:none;font-family:var(--font-ui);font-size:var(--text-xs);color:var(--lavender);cursor:pointer;text-decoration:none;padding:0;">Forgot password?</button>
+        <a href="/privacy.html" target="_blank" style="font-family:var(--font-ui);font-size:var(--text-xs);color:var(--lavender);text-decoration:none;">Privacy Policy</a>
+      </div>
       <div class="auth-divider"><div class="auth-divider-line"></div><div class="auth-divider-text">or</div><div class="auth-divider-line"></div></div>
       <div class="auth-switch">Already have an account? <button onclick="showLogin()">Sign in</button></div>
-    </div>
-  <div style="margin-top:var(--space-6);padding-top:var(--space-4);border-top:1px solid var(--glass-border);text-align:center;">
-      <a href="/privacy.html" style="font-size:var(--text-2xs);color:var(--fg-disabled);font-family:var(--font-ui);text-decoration:none;letter-spacing:0.05em;" target="_blank">Privacy Policy</a>
     </div>
   </div>
 </div>
@@ -1080,7 +1081,7 @@ async function signOut(){
   document.getElementById('main-nav').classList.remove('nav-floating');
   await sb.auth.signOut();
   currentUser=null; trips=[];
-  hideEl('app'); hideEl('site-footer'); showEl('auth-screen'); showLogin();
+  hideEl('app'); showEl('auth-screen'); showLogin();
 }
 
 // ── INIT ──
@@ -1101,14 +1102,14 @@ async function init(){
       showApp();
     } else if(!session&&currentUser){
       currentUser=null; trips=[];
-      hideEl('app'); hideEl('site-footer'); showEl('auth-screen');
+      hideEl('app'); showEl('auth-screen');
     }
   });
 }
 
 async function showApp(){
   showEl('app');
-  showEl('site-footer');
+ 
   document.getElementById('nav-right').style.display='';
   document.getElementById('hamburger').style.display='';
   document.getElementById('main-nav').classList.add('nav-floating');
@@ -1773,13 +1774,5 @@ init();
 </script>
 
 
-<!-- FOOTER -->
-<footer id="site-footer" style="display:none;" style="position:relative;z-index:10;border-top:1px solid var(--glass-border);padding:var(--space-6) var(--space-8);display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;">
-  <div style="font-size:var(--text-2xs);color:var(--fg-disabled);font-family:var(--font-ui);">© <span id="footer-year"></span> OrbitSplit</div>
-  <div style="display:flex;gap:var(--space-5);">
-    <a href="/privacy.html" style="font-size:var(--text-2xs);color:var(--fg-disabled);font-family:var(--font-ui);text-decoration:none;" onmouseover="this.style.color='var(--fg-secondary)'" onmouseout="this.style.color='var(--fg-disabled)'">Privacy Policy</a>
-  </div>
-</footer>
-<script>document.getElementById('footer-year').textContent=new Date().getFullYear();</script>
 </body>
 </html>
