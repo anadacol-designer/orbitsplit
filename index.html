@@ -143,7 +143,7 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 .planner-title{font-family:var(--font-display);font-size:clamp(24px,3.5vw,40px);font-weight:var(--weight-bold);line-height:1.05;}
 .planner-title span{color:var(--orange);font-style:italic;}
 .planner-dates{font-size:var(--text-xs);color:var(--fg-tertiary);font-family:var(--font-mono);margin-top:var(--space-2);}
-.planner-tabs{padding:var(--space-6) var(--space-8) 0;display:flex;}
+.planner-tabs{padding:var(--space-6) var(--space-8) 0;display:flex;justify-content:center;}
 .tab-bar{display:flex;gap:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:5px;overflow-x:auto;scrollbar-width:none;}
 .tab-bar::-webkit-scrollbar{display:none;}
 .planner-tab{padding:8px 18px;border-radius:12px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);cursor:pointer;transition:all 200ms cubic-bezier(0.23,1,0.32,1);background:none;border:none;white-space:nowrap;}
@@ -671,23 +671,24 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
   <!-- PLANNER -->
   <div class="view" id="view-planner">
     <div class="planner-hero">
+      <!-- Left: back + title + dates -->
       <div style="flex:1;">
         <button class="back-btn" onclick="goHome()" style="margin-bottom:var(--space-4);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>All trips
         </button>
         <div class="planner-eyebrow" id="pl-eyebrow">Trip</div>
-        <div style="display:flex;align-items:flex-start;gap:var(--space-3);">
-          <div class="planner-title" id="pl-title" style="flex:1;"></div>
-          <button class="edit-trip-btn" onclick="openEditTrip(currentTripId)" title="Edit trip">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Edit
-          </button>
-        </div>
+        <div class="planner-title" id="pl-title"></div>
         <div class="planner-dates" id="pl-dates"></div>
       </div>
-      <div style="display:flex;gap:var(--space-8);align-items:flex-end;">
-        <div><div class="stat-val" id="pl-places">0</div><div class="stat-label">Places</div></div>
-        <div><div class="stat-val" id="pl-spend">€0</div><div class="stat-label">Spend</div></div>
+      <!-- Right: stats + edit button aligned to top -->
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-4);">
+        <button class="back-btn" onclick="openEditTrip(currentTripId)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit trip
+        </button>
+        <div style="display:flex;gap:var(--space-8);">
+          <div><div class="stat-val" id="pl-places">0</div><div class="stat-label">Places</div></div>
+          <div><div class="stat-val" id="pl-spend">€0</div><div class="stat-label">Spend</div></div>
+        </div>
       </div>
     </div>
     <div class="planner-tabs" id="planner-tabs">
@@ -735,8 +736,14 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
       <!-- Checklist -->
       <div class="planner-section" id="psec-checklist">
         <div class="sh"><h2>Checklist</h2><span class="ct" id="c-checks">0 tasks</span></div>
+        <div class="add-form glass">
+          <div class="field" style="flex:1;"><label>New task</label><input type="text" id="ck-text" placeholder="Print boarding passes, buy travel adaptor…" onkeydown="if(event.key==='Enter')addCheck()"/></div>
+          <button class="btn btn-primary btn-inline" onclick="addCheck()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add task
+          </button>
+        </div>
         <div class="check-list" id="check-list"></div>
-        <div class="empty" id="check-empty" style="display:none;"></div>
+        <div class="empty" id="check-empty">Nothing here yet.<br/>Add things to do before or during the trip.</div>
       </div>
 
       <!-- Journal -->
@@ -1374,8 +1381,8 @@ function renderExpenses(){
     <div class="exp-split">${esc(e.split)}</div>
     <div class="exp-amt">€${e.amount.toFixed(2)}</div>
     <button class="exp-del" onclick="delExp(${e.id})">×</button></div>`).join('');
-  const newExpRow=`<div class="trip-card-new" onclick="openAddExpense()" style="min-height:80px;flex-direction:row;justify-content:flex-start;gap:var(--space-3);padding:var(--space-4) var(--space-6);border-radius:var(--radius-sm);"><div class="trip-card-new-icon" style="width:36px;height:36px;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div><div class="trip-card-new-label" style="text-align:left;">Add expense</div><div class="trip-card-new-sub" style="text-align:left;">Track a bill or payment</div></div></div>`;
-  document.getElementById('exp-list').innerHTML+=newExpRow;
+  const newExpCard=`<div class="trip-card-new" onclick="openAddExpense()" style="margin-top:var(--space-3);"><div class="trip-card-new-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="trip-card-new-label">Add expense</div><div class="trip-card-new-sub">Track a bill or payment</div></div>`;
+  document.getElementById('exp-list').innerHTML+=newExpCard;
   document.getElementById('exp-empty').style.display='none';
 }
 
@@ -1393,7 +1400,7 @@ function renderDocs(){
 function saveNotes(){const t=currentTrip();if(!t)return;t.notes=document.getElementById('notes').value;debouncedSave(t.id);}
 
 // ── CHECKLIST ──
-function addCheck(){const t=currentTrip();if(!t)return;const text=document.getElementById('ck-text').value.trim();if(!text)return;t.checks.push({id:Date.now(),text,done:false}); closeModal('modal-add-task');document.getElementById('ck-text').value='';renderChecks();debouncedSave(t.id);}
+function addCheck(){const t=currentTrip();if(!t)return;const text=document.getElementById('ck-text').value.trim();if(!text)return;t.checks.push({id:Date.now(),text,done:false});document.getElementById('ck-text').value='';renderChecks();debouncedSave(t.id);}
 function togCheck(id){const t=currentTrip();if(!t)return;const c=t.checks.find(x=>x.id===id);if(c)c.done=!c.done;renderChecks();debouncedSave(t.id);}
 function delCheck(id){const t=currentTrip();if(!t)return;t.checks=t.checks.filter(c=>c.id!==id);renderChecks();debouncedSave(t.id);}
 function renderChecks(){
@@ -1402,9 +1409,7 @@ function renderChecks(){
   document.getElementById('check-list').innerHTML=sorted.map(c=>`<div class="check-item"><input type="checkbox" id="ck${c.id}" ${c.done?'checked':''} onchange="togCheck(${c.id})"/><label for="ck${c.id}" class="${c.done?'done':''}">${esc(c.text)}</label><button class="cd" onclick="delCheck(${c.id})">×</button></div>`).join('');
   const done=t.checks.filter(c=>c.done).length;
   document.getElementById('c-checks').textContent=`${t.checks.length} tasks · ${done} done`;
-  const newCheckRow=`<div class="trip-card-new" onclick="openAddTask()" style="min-height:64px;flex-direction:row;justify-content:flex-start;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);margin-top:var(--space-2);"><div class="trip-card-new-icon" style="width:32px;height:32px;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="trip-card-new-label" style="text-align:left;">Add task</div></div>`;
-  document.getElementById('check-list').innerHTML+=newCheckRow;
-  document.getElementById('check-empty').style.display='none';
+  document.getElementById('check-empty').style.display=t.checks.length?'none':'block';
 }
 
 // ── JOURNAL ──
