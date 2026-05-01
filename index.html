@@ -144,9 +144,9 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 .planner-title span{color:var(--orange);font-style:italic;}
 .planner-dates{font-size:var(--text-xs);color:var(--fg-tertiary);font-family:var(--font-mono);margin-top:var(--space-2);}
 .planner-tabs{padding:var(--space-6) var(--space-8) 0;display:flex;justify-content:center;}
-.tab-bar{display:flex;gap:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:5px;overflow-x:auto;scrollbar-width:none;}
+.tab-bar{display:flex;gap:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:5px;overflow-x:auto;scrollbar-width:none;width:100%;}
 .tab-bar::-webkit-scrollbar{display:none;}
-.planner-tab{padding:8px 18px;border-radius:12px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);cursor:pointer;transition:all 200ms cubic-bezier(0.23,1,0.32,1);background:none;border:none;white-space:nowrap;}
+.planner-tab{padding:8px 18px;border-radius:12px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);cursor:pointer;transition:all 200ms cubic-bezier(0.23,1,0.32,1);background:none;border:none;white-space:nowrap;flex:1;text-align:center;}
 .planner-tab:hover{color:rgba(255,255,255,0.7);}
 .planner-tab.active{background:rgba(255,255,255,0.12);color:white;box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);}
 .planner-section{display:none;}
@@ -711,6 +711,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
         </div>
         <div class="cards" id="places-list"></div>
+        <div id="places-new-tile"></div>
 <div class="empty" id="places-empty" style="display:none;"></div>
       </div>
 
@@ -910,6 +911,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
     <div class="modal-fields">
       <div class="field"><label>Trip name</label><input type="text" id="et-name" maxlength="50"/></div>
       <div class="field"><label>Destination</label><input type="text" id="et-dest" maxlength="100"/></div>
+      <div class="field"><label>Who's joining?</label><input type="text" id="et-travellers" placeholder="e.g. Mom, João, Sara (comma separated)" maxlength="200"/></div>
       <div class="field"><label>Start date</label><input type="date" id="et-start" oninput="syncEndDate('et-start','et-end')"/></div>
       <div class="field"><label>End date</label><input type="date" id="et-end"/></div>
     </div>
@@ -1200,15 +1202,17 @@ async function createTrip(){
 
 // ── EDIT TRIP ──
 function openEditTrip(id){
+  if(!id) return;
   editingTripId=id; const t=tripById(id);
+  if(!t) return;
   document.getElementById('et-name').value=t.name;
   document.getElementById('et-dest').value=t.destination||'';
   document.getElementById('et-travellers').value=(t.travellers||[]).join(', ');
   document.getElementById('et-start').value=t.startDate||'';
   document.getElementById('et-end').value=t.endDate||'';
-  showEl('modal-edit');
+  document.getElementById('modal-edit').style.display='flex';
 }
-function closeEditTrip(){hideEl('modal-edit');editingTripId=null;}
+function closeEditTrip(){document.getElementById('modal-edit').style.display='none';editingTripId=null;}
 document.getElementById('modal-edit').addEventListener('click',function(e){if(e.target===this)closeEditTrip();});
 
 async function saveEditTrip(){
@@ -1321,8 +1325,8 @@ function renderPlaces(){
     ${p.ref?`<div class="card-addr" style="color:var(--fg-tertiary);">${esc(p.ref)}</div>`:''}
     ${(p.startDate||p.date)?`<div class="card-date">${fmtD(p.startDate||p.date)}${p.endDate&&p.endDate!==p.startDate?' — '+fmtD(p.endDate):''}</div>`:''}
     </div>`).join('');
-  const newCard=`<div class="trip-card-new" onclick="openAddPlace()"><div class="trip-card-new-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="trip-card-new-label">Add place</div><div class="trip-card-new-sub">Hotel, flight, restaurant…</div></div>`;
-  document.getElementById('places-list').innerHTML+=newCard;
+  const newCard=`<div class="trip-card-new" onclick="openAddPlace()" style="flex-direction:row;justify-content:flex-start;gap:var(--space-3);padding:var(--space-4) var(--space-6);border-radius:var(--radius-sm);min-height:80px;margin-top:var(--space-3);"><div class="trip-card-new-icon" style="width:36px;height:36px;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div><div class="trip-card-new-label" style="text-align:left;">Add place</div><div class="trip-card-new-sub" style="text-align:left;">Hotel, flight, restaurant…</div></div></div>`;
+  document.getElementById('places-new-tile').innerHTML=newCard;
   document.getElementById('places-empty').style.display='none';
   document.getElementById('c-places').textContent=t.places.length+' saved';
 }
