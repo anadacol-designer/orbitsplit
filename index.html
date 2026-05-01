@@ -144,16 +144,16 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 .planner-title span{color:var(--orange);font-style:italic;}
 .planner-dates{font-size:var(--text-xs);color:var(--fg-tertiary);font-family:var(--font-mono);margin-top:var(--space-2);}
 .planner-tabs{padding:var(--space-6) var(--space-8) 0;display:flex;justify-content:center;}
-.tab-bar{display:flex;gap:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:5px;overflow-x:auto;scrollbar-width:none;width:100%;}
+.tab-bar{display:flex;gap:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:5px;overflow-x:auto;scrollbar-width:none;}
 .tab-bar::-webkit-scrollbar{display:none;}
-.planner-tab{padding:8px 18px;border-radius:12px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);cursor:pointer;transition:all 200ms cubic-bezier(0.23,1,0.32,1);background:none;border:none;white-space:nowrap;flex:1;text-align:center;}
+.planner-tab{padding:8px 18px;border-radius:12px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);cursor:pointer;transition:all 200ms cubic-bezier(0.23,1,0.32,1);background:none;border:none;white-space:nowrap;text-align:center;}
 .planner-tab:hover{color:rgba(255,255,255,0.7);}
 .planner-tab.active{background:rgba(255,255,255,0.12);color:white;box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);}
 .planner-section{display:none;}
 .planner-section.active{display:block;animation:fadeUp var(--dur-base) var(--ease-glass);}
 
 /* ── FORMS ── */
-.sh{display:flex;align-items:baseline;gap:var(--space-3);margin-bottom:var(--space-6);}
+.sh{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-6);}
 .sh h2{font-family:var(--font-display);font-size:var(--text-xl);font-weight:var(--weight-semibold);}
 .sh .ct{font-size:var(--text-2xs);font-weight:var(--weight-semibold);letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);}
 .add-form{border-radius:var(--radius-md);padding:var(--space-6);margin-bottom:var(--space-8);display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:flex-end;box-shadow:var(--top-shine),var(--inner-glow);}
@@ -708,7 +708,9 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
         <div class="sh">
           <h2>Places &amp; bookings</h2>
           <span class="ct" id="c-places">0 saved</span>
-
+          <button class="btn btn-primary btn-inline" onclick="openAddPlace()" style="margin-left:auto;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add place
+          </button>
         </div>
         <div class="cards" id="places-list"></div>
         <div id="places-new-tile"></div>
@@ -717,7 +719,9 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
       <!-- Expenses -->
       <div class="planner-section" id="psec-expenses">
-        <div class="sh"><h2>Expenses</h2><span class="ct" id="c-expenses">0 entries</span></div>
+        <div class="sh"><h2>Expenses</h2><span class="ct" id="c-expenses">0 entries</span><button class="btn btn-primary btn-inline" onclick="openAddExpense()" style="margin-left:auto;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add expense
+          </button></div>
         <div class="metrics" id="metrics-wrap">
           <div class="metric glass hi"><div class="ml">Total spent</div><div class="mv" id="m-total">€0</div></div>
           <div class="metric glass"><div class="ml">Your share</div><div class="mv" id="m-you">€0</div></div>
@@ -729,7 +733,9 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
       <!-- Documents -->
       <div class="planner-section" id="psec-docs">
-        <div class="sh"><h2>Documents &amp; references</h2><span class="ct" id="c-docs">0 saved</span></div>
+        <div class="sh"><h2>Documents &amp; references</h2><span class="ct" id="c-docs">0 saved</span><button class="btn btn-primary btn-inline" onclick="openAddDoc()" style="margin-left:auto;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add document
+          </button></div>
         <div id="docs-list"></div>
         <div class="empty" id="docs-empty" style="display:none;"></div>
       </div>
@@ -749,14 +755,18 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
       <!-- Journal -->
       <div class="planner-section" id="psec-journal">
-        <div class="sh"><h2>Journal</h2><span class="ct" id="c-journal">0 entries</span></div>
+        <div class="sh"><h2>Journal</h2><span class="ct" id="c-journal">0 entries</span><button class="btn btn-primary btn-inline" onclick="openAddJournal()" style="margin-left:auto;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New entry
+          </button></div>
         <div id="journal-list"></div>
         <div class="empty" id="journal-empty" style="display:none;"></div>
       </div>
 
       <!-- Pictures -->
       <div class="planner-section" id="psec-pictures">
-        <div class="sh"><h2>Pictures</h2><span class="ct" id="c-pictures">0 photos</span></div>
+        <div class="sh"><h2>Pictures</h2><span class="ct" id="c-pictures">0 photos</span><button class="btn btn-primary btn-inline" onclick="document.getElementById('pic-input').click()" style="margin-left:auto;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add photos
+          </button></div>
         <input type="file" id="pic-input" accept="image/*" multiple style="display:none;" onchange="addPictures(event)"/>
         <div class="pictures-grid" id="pictures-grid"></div>
         <div class="empty" id="pictures-empty" style="display:none;"></div>
