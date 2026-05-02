@@ -77,11 +77,12 @@ body::before{content:'';position:fixed;inset:0;z-index:1000;pointer-events:none;
 .hero-eyebrow svg{animation:spin 8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-.hero-title{font-family:var(--font-display);font-size:clamp(48px,9vw,96px);font-weight:400;line-height:1.0;
+.hero-title{font-family:var(--font-display);font-size:clamp(44px,8.5vw,92px);font-weight:400;line-height:1.0;
   letter-spacing:-0.01em;margin-bottom:28px;
   animation:fadeUp 0.8s 0.1s ease both;}
 .hero-title em{font-style:normal;color:var(--orange);}
 .hero-title .line-2{display:block;background:linear-gradient(135deg,var(--blue-hi),var(--lavender));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-title .line-3{display:block;background:linear-gradient(135deg,var(--mint),oklch(72% 0.16 305));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
 .hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--fg-2);max-width:560px;line-height:1.6;
   margin:0 auto 48px;animation:fadeUp 0.8s 0.2s ease both;}
@@ -296,11 +297,12 @@ footer{border-top:1px solid var(--border);padding:40px 24px;}
   <div style="position:relative;z-index:10;">
     <div class="hero-eyebrow">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
-      Trip planning, reimagined
+      Plan the trip — Keep the stories
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
     </div>
     <h1 class="hero-title">
-      Plan trips.<br/>
-      <span class="line-2">Split smarter.</span>
+      Adventure belongs<br/>
+      to the <em>organised</em>
     </h1>
     <p class="hero-sub">OrbitSplit brings your whole trip together — itinerary, expenses, documents, and memories — all in one beautiful place.</p>
     <div class="hero-actions">
