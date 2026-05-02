@@ -818,8 +818,15 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
       <div class="field"><label>Start date</label><input type="date" id="et-start" oninput="syncEndDate('et-start','et-end')"/></div>
       <div class="field"><label>End date</label><input type="date" id="et-end"/></div>
     </div>
+    <div id="edit-delete-confirm" style="display:none;background:oklch(65% 0.25 18/0.12);border:1px solid oklch(65% 0.25 18/0.25);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);margin-bottom:var(--space-4);font-size:var(--text-xs);color:oklch(80% 0.15 18);">
+      Are you sure? This will permanently delete this trip and all its data.
+      <div style="display:flex;gap:var(--space-2);margin-top:var(--space-3);">
+        <button class="btn btn-danger btn-inline" onclick="deleteTripConfirm()" style="flex:1;">Yes, delete</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('edit-delete-confirm').style.display='none'" style="flex:1;">Cancel</button>
+      </div>
+    </div>
     <div class="modal-actions">
-      <button class="btn btn-danger" onclick="deleteTripConfirm()">Delete</button>
+      <button class="btn btn-danger" onclick="document.getElementById('edit-delete-confirm').style.display='block'">Delete</button>
       <button class="btn btn-ghost" onclick="closeEditTrip()">Cancel</button>
       <button class="btn btn-primary btn-inline" onclick="saveEditTrip()">Save changes</button>
     </div>
@@ -1384,7 +1391,7 @@ function openEditTrip(id){
   document.getElementById('et-end').value=t.endDate||'';
   document.getElementById('modal-edit').style.display='flex';
 }
-function closeEditTrip(){document.getElementById('modal-edit').style.display='none';editingTripId=null;}
+function closeEditTrip(){document.getElementById('modal-edit').style.display='none';document.getElementById('edit-delete-confirm').style.display='none';editingTripId=null;}
 document.getElementById('modal-edit').addEventListener('click',function(e){if(e.target===this)closeEditTrip();});
 
 async function saveEditTrip(){
@@ -1402,7 +1409,6 @@ async function saveEditTrip(){
 }
 
 async function deleteTripConfirm(){
-  if(!confirm('Delete this trip and all its data?')) return;
   const id=editingTripId;
   if(!id){alert('No trip selected — id is null.');return;}
   const uid=currentUser?.id;
