@@ -1615,7 +1615,7 @@ function openAddExpense(){
 function refreshSplitFields(){
   const method=document.getElementById('e-method').value;
   const amount=parseFloat(document.getElementById('e-amt').value)||0;
-  const me='You';
+  const me=getMe();
   const travellers=getTravellers();
   const all=[me,...travellers];
   const container=document.getElementById('e-split-fields');
@@ -1756,9 +1756,9 @@ function addExpense(){
   const n=document.getElementById('e-name').value.trim();
   const a=parseFloat(document.getElementById('e-amt').value);
   if(!n||isNaN(a)||a<=0) return;
-  const splitVal=document.getElementById('e-split').value||'you:split';
+  const splitVal=document.getElementById('e-split').value||getMe()+':split';
   const method=document.getElementById('e-method').value;
-  const me='You'; const all=[me,...getTravellers()];
+  const me=getMe(); const all=[me,...getTravellers()];
 
   // Build custom shares if needed
   let customShares=null;
@@ -1785,10 +1785,14 @@ function getTravellers(){
   const t=currentTrip(); if(!t) return [];
   return t.travellers&&t.travellers.length?t.travellers:[];
 }
+function getMe(){
+  const meta=currentUser?.user_metadata||{};
+  return meta.display_name||meta.full_name||meta.name||'You';
+}
 
 function buildSplitOptions(selectedVal){
   const travellers=getTravellers();
-  const me='You';
+  const me=getMe();
   let opts=[];
 
   if(travellers.length===1){
@@ -1820,7 +1824,7 @@ function buildSplitOptions(selectedVal){
 
 function parseSplit(val, amount, method, customShares){
   const travellers=getTravellers();
-  const me='You';
+  const me=getMe();
   const all=[me,...travellers];
 
   // Custom splits take precedence
@@ -1851,35 +1855,39 @@ function renderExpenses(){
   // Rebuild split select options
   const splitEl=document.getElementById('e-split');
   if(splitEl) splitEl.innerHTML=buildSplitOptions(splitEl.value);
-  // Compute per-person totals
-  const travellers=t.travellers&&t.travellers.length?t.travellers:['You'];
+  // Compute per-person totals using parseSplit
+  const me=getMe();
+  const travellers=t.travellers&&t.travellers.length?t.travellers:[];
+  const all=[me,...travellers];
   let tot=0;
   const perPerson={};
-  travellers.forEach(n=>{perPerson[n]=0;});
+  all.forEach(n=>{perPerson[n]=0;});
   t.expenses.forEach(e=>{
     tot+=e.amount;
-    if(e.split==='Everyone'){
-      travellers.forEach(n=>{perPerson[n]=(perPerson[n]||0)+e.amount/travellers.length;});
-    } else {
-      perPerson[e.split]=(perPerson[e.split]||0)+e.amount;
-    }
+    const{shares}=parseSplit(e.split,e.amount,e.method,e.customShares);
+    Object.entries(shares).forEach(([person,amt])=>{
+      if(perPerson[person]!==undefined) perPerson[person]+=amt;
+      else perPerson[person]=amt;
+    });
   });
   document.getElementById('m-total').textContent='€'+tot.toFixed(2);
   // Update metric cards dynamically
   const metricsEl=document.querySelector('.metrics');
   if(metricsEl){
     const cards=[`<div class="metric glass hi"><div class="ml">Total spent</div><div class="mv" id="m-total">€${tot.toFixed(2)}</div></div>`];
-    travellers.forEach(name=>{
+    all.forEach(name=>{
       cards.push(`<div class="metric glass"><div class="ml">${esc(name)}</div><div class="mv">€${(perPerson[name]||0).toFixed(2)}</div></div>`);
     });
     metricsEl.innerHTML=cards.join('');
   }
   document.getElementById('c-expenses').textContent=t.expenses.length+' entries';
-  document.getElementById('exp-list').innerHTML=t.expenses.map(e=>`
-    <div class="exp-row glass"><div class="exp-name">${esc(e.name)}</div>
-    <div class="exp-split">${esc(e.split)}</div>
+  document.getElementById('exp-list').innerHTML=t.expenses.map(e=>{
+    const{payer}=parseSplit(e.split,e.amount,e.method,e.customShares);
+    const methodLabel=e.method==='custom'?'custom split':e.method==='percent'?'% split':'even split';
+    return`<div class="exp-row glass"><div class="exp-name">${esc(e.name)}</div>
+    <div class="exp-split">${esc(payer)} paid · ${methodLabel}</div>
     <div class="exp-amt">€${e.amount.toFixed(2)}</div>
-    <button class="exp-del" onclick="delExp(${e.id})">×</button></div>`).join('');
+    <button class="exp-del" onclick="delExp(${e.id})">×</button></div>`;}).join('');
   const newExpCard=`<div class="trip-card-new" onclick="openAddExpense()" style="margin-top:var(--space-3);"><div class="trip-card-new-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="trip-card-new-label">Add expense</div><div class="trip-card-new-sub">Track a bill or payment</div></div>`;
   document.getElementById('exp-list').innerHTML+=newExpCard;
   document.getElementById('exp-empty').style.display='none';
