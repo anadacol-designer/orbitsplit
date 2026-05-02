@@ -1404,12 +1404,18 @@ async function saveEditTrip(){
 async function deleteTripConfirm(){
   if(!confirm('Delete this trip and all its data?')) return;
   const id=editingTripId;
+  if(!id){alert('No trip selected.');return;}
+  const uid=currentUser?.id;
   closeEditTrip();
-  // Delete trip_data first (foreign key), then the trip itself
-  const{error:dataErr}=await sb.from('trip_data').delete().eq('trip_id',id);
-  if(dataErr){console.error('trip_data delete error:',dataErr);alert('Could not delete trip data: '+dataErr.message);return;}
-  const{error:tripErr}=await sb.from('trips').delete().eq('id',id);
-  if(tripErr){console.error('trips delete error:',tripErr);alert('Could not delete trip: '+tripErr.message);return;}
+  // Try to delete trip_data — ignore error if no rows exist (new trips may have none)
+  await sb.from('trip_data').delete().eq('trip_id',id).eq('user_id',uid);
+  // Delete the trip — cascade will handle any remaining trip_data
+  const{error:tripErr}=await sb.from('trips').delete().eq('id',id).eq('user_id',uid);
+  if(tripErr){
+    console.error('trips delete error:',tripErr);
+    alert('Could not delete trip: '+tripErr.message);
+    return;
+  }
   trips=trips.filter(t=>t.id!==id);
   if(currentTripId===id) goHome();
   else renderDashboard();
