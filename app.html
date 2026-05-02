@@ -1404,16 +1404,25 @@ async function saveEditTrip(){
 async function deleteTripConfirm(){
   if(!confirm('Delete this trip and all its data?')) return;
   const id=editingTripId;
-  if(!id){alert('No trip selected.');return;}
+  if(!id){alert('No trip selected — id is null.');return;}
   const uid=currentUser?.id;
+  console.log('🗑 Deleting trip:', id, 'user:', uid);
   closeEditTrip();
-  // Try to delete trip_data — ignore error if no rows exist (new trips may have none)
-  await sb.from('trip_data').delete().eq('trip_id',id).eq('user_id',uid);
-  // Delete the trip — cascade will handle any remaining trip_data
-  const{error:tripErr}=await sb.from('trips').delete().eq('id',id).eq('user_id',uid);
+
+  // Step 1: delete trip_data
+  const{error:dataErr,data:dataRes}=await sb.from('trip_data').delete().eq('trip_id',id).eq('user_id',uid).select();
+  console.log('trip_data delete result:', dataRes, dataErr);
+
+  // Step 2: delete trip
+  const{error:tripErr,data:tripRes}=await sb.from('trips').delete().eq('id',id).eq('user_id',uid).select();
+  console.log('trips delete result:', tripRes, tripErr);
+
   if(tripErr){
-    console.error('trips delete error:',tripErr);
-    alert('Could not delete trip: '+tripErr.message);
+    alert('Delete failed: '+tripErr.message+' (code: '+tripErr.code+')');
+    return;
+  }
+  if(!tripRes || tripRes.length===0){
+    alert('Delete failed: no trip was deleted. Check RLS policies in Supabase.');
     return;
   }
   trips=trips.filter(t=>t.id!==id);
@@ -1440,7 +1449,7 @@ function renderPlanner(){
   document.getElementById('pl-places').textContent=(t.places||[]).length;
   document.getElementById('pl-spend').textContent='€'+(t.expenses||[]).reduce((s,e)=>s+e.amount,0).toFixed(0);
   renderPlaces();renderExpenses();renderDocs();renderChecks();renderJournal();renderPictures();
-  document.getElementById('notes').value=t.notes||'';
+  const notesEl=document.getElementById('notes'); if(notesEl) notesEl.value=t.notes||'';
   initJournalDate();
 }
 
