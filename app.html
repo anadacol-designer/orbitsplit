@@ -331,6 +331,20 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 
 </style>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBuHbx6UUs5I7XTjRE3MoMnDOZv6ioTF_k&libraries=places&callback=initMaps" async defer></script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-T153ER0YDX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-T153ER0YDX');
+</script>
+<script>
+// OrbitSplit — GA4 custom events
+function gaEvent(name, params){
+  if(typeof gtag !== 'undefined') gtag('event', name, params||{});
+}
+</script>
 </head>
 <body>
 
@@ -1113,7 +1127,8 @@ function showSignup(){
 
 
 async function signInWithGoogle(){
-  const{error}=await sb.auth.signInWithOAuth({
+  const{error}=gaEvent('login', {method:'google'});
+  await sb.auth.signInWithOAuth({
     provider:'google',
     options:{redirectTo:'https://orbitsplit.com/app.html'}
   });
@@ -1127,7 +1142,8 @@ async function signIn(){
   const btn=document.getElementById('login-btn');
   errEl.style.display='none';
   btn.disabled=true; btn.textContent='Signing in…';
-  const{error}=await sb.auth.signInWithPassword({email,password});
+  const{error}=gaEvent('login', {method:'email'});
+  await sb.auth.signInWithPassword({email,password});
   btn.disabled=false; btn.textContent='Sign in';
   if(error){errEl.textContent=error.message;errEl.style.display='block';}
 }
@@ -1143,7 +1159,8 @@ async function signUp(){
   if(password!==confirm){errEl.textContent='Passwords do not match.';errEl.style.display='block';return;}
   if(password.length<6){errEl.textContent='Password must be at least 6 characters.';errEl.style.display='block';return;}
   btn.disabled=true; btn.textContent='Creating account…';
-  const{error}=await sb.auth.signUp({email,password});
+  const{error}=gaEvent('sign_up', {method:'email'});
+  await sb.auth.signUp({email,password});
   btn.disabled=false; btn.textContent='Create account';
   if(error){errEl.textContent=error.message;errEl.style.display='block';}
   else{sucEl.textContent='Account created! Check your email to confirm, then sign in.';sucEl.style.display='block';}
@@ -1376,6 +1393,7 @@ async function createTrip(){
   closeNewTrip();
   btn.disabled=false;
   await saveTrip(trip.id);
+  gaEvent('create_trip');
   openTrip(trip.id);
 }
 
@@ -1605,6 +1623,7 @@ document.getElementById('modal-add-place').addEventListener('click',function(e){
 function addPlace(){
   const t=currentTrip(); if(!t) return;
   const n=document.getElementById('p-name').value.trim(); if(!n) return;
+  gaEvent('add_place', {category:document.getElementById('p-cat')?.value});
   t.places.push({id:Date.now(),name:n,addr:document.getElementById('p-addr').value.trim(),ref:document.getElementById('p-ref').value.trim(),cat:document.getElementById('p-cat').value,startDate:document.getElementById('p-start').value,endDate:document.getElementById('p-end').value});
   closeAddPlace();
   renderPlaces(); debouncedSave(t.id);
@@ -1651,6 +1670,7 @@ function addExpense(){
     });
   }
 
+  gaEvent('add_expense');
   t.expenses.push({id:Date.now(),name:n,amount:a,split:splitVal,method,customShares});
   closeModal('modal-add-expense');
   document.getElementById('e-name').value='';document.getElementById('e-amt').value='';
@@ -1879,6 +1899,7 @@ function addJournalEntry(){
   const body=document.getElementById('j-body').value.trim();
   const date=document.getElementById('j-date').value;
   if(!title&&!body) return;
+  gaEvent('add_journal_entry');
   t.journal.unshift({id:Date.now(),title:title||'Untitled',body,date:date||new Date().toISOString().split('T')[0]}); closeModal('modal-add-journal');
   document.getElementById('j-title').value='';document.getElementById('j-body').value='';
   document.getElementById('j-count').textContent='0 words';
