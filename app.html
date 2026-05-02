@@ -102,7 +102,8 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 .trips-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-6);flex-wrap:wrap;gap:var(--space-3);}
 .trips-header h2{font-family:var(--font-display);font-size:var(--text-xl);font-weight:var(--weight-semibold);}
 .trips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--space-4);}
-.trip-card{border-radius:var(--radius-md);padding:var(--space-6);cursor:pointer;transition:transform var(--dur-fast) var(--ease-glass),background var(--dur-fast) var(--ease-glass),border-color var(--dur-fast) var(--ease-glass);box-shadow:var(--top-shine),var(--inner-glow);animation:fadeUp var(--dur-base) var(--ease-glass) both;}
+.trip-card{border-radius:var(--radius-md);padding:var(--space-6);cursor:pointer;transition:transform var(--dur-fast) var(--ease-glass),background var(--dur-fast) var(--ease-glass),border-color var(--dur-fast) var(--ease-glass);box-shadow:var(--top-shine),var(--inner-glow);animation:cardReveal 600ms var(--ease-glass) both;}
+@keyframes cardReveal{0%{opacity:0;filter:blur(12px) saturate(0);transform:translateY(8px) scale(0.98);}60%{filter:blur(2px) saturate(0.5);}100%{opacity:1;filter:blur(0) saturate(1);transform:translateY(0) scale(1);}}
 .trip-card:hover{transform:translateY(-3px);background:var(--glass-md);border-color:var(--glass-border-hi);}
 .trip-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--space-4);}
 .trip-card-name{font-family:var(--font-display);font-size:var(--text-base);font-weight:var(--weight-semibold);line-height:1.2;margin-bottom:var(--space-1);}
@@ -1405,7 +1406,7 @@ function renderDashboard(){
     const checks=(t.checks||[]).length;
     const done=(t.checks||[]).filter(c=>c.done).length;
     const dateStr=t.startDate&&t.endDate?`${fmtD(t.startDate)} — ${fmtD(t.endDate)}`:t.startDate?`From ${fmtD(t.startDate)}`:'Dates not set';
-    return`<div class="trip-card glass" onclick="openTrip('${t.id}')" style="animation-delay:${i*40}ms">
+    return`<div class="trip-card glass" onclick="openTrip('${t.id}')" style="animation-delay:${i*80}ms">
       <div class="trip-card-header">
         <div><div class="trip-card-name">${esc(t.name)}</div>${t.destination?`<div class="trip-card-dest">${esc(t.destination)}</div>`:''}</div>
         <button class="trip-card-menu" onclick="openCtx(event,'${t.id}')">···</button>
