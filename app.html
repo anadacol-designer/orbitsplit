@@ -103,6 +103,24 @@ body::after{content:'';position:fixed;inset:0;z-index:999;pointer-events:none;ba
 .trips-header h2{font-family:var(--font-display);font-size:var(--text-xl);font-weight:var(--weight-semibold);}
 .trips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--space-4);}
 .trip-card{border-radius:var(--radius-md);padding:var(--space-6);cursor:pointer;transition:transform var(--dur-fast) var(--ease-glass),background var(--dur-fast) var(--ease-glass),border-color var(--dur-fast) var(--ease-glass);box-shadow:var(--top-shine),var(--inner-glow);animation:cardReveal 600ms var(--ease-glass) both;}
+
+/* Skeleton screens */
+.skeleton{background:linear-gradient(90deg,var(--glass-sm) 25%,var(--glass-md) 50%,var(--glass-sm) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+.skel-card{border-radius:var(--radius-md);padding:var(--space-6);background:var(--glass-xs);border:1px solid var(--glass-border);box-shadow:var(--top-shine);}
+.skel-line{height:12px;margin-bottom:8px;}
+.skel-title{height:20px;width:60%;margin-bottom:6px;}
+.skel-sub{height:11px;width:35%;margin-bottom:var(--space-4);}
+.skel-dates{height:10px;width:55%;margin-bottom:var(--space-6);}
+.skel-divider{height:1px;background:var(--glass-border);margin-bottom:var(--space-4);}
+.skel-stats{display:flex;gap:var(--space-6);margin-bottom:var(--space-6);}
+.skel-stat{display:flex;flex-direction:column;gap:6px;}
+.skel-stat-val{height:18px;width:40px;}
+.skel-stat-lbl{height:9px;width:32px;}
+.skel-pills{display:flex;gap:6px;}
+.skel-pill{height:22px;width:28px;border-radius:100px;}
+.skel-arrow{height:12px;width:12px;border-radius:50%;margin-left:auto;margin-top:var(--space-4);}
+
 @keyframes cardReveal{0%{opacity:0;filter:blur(12px) saturate(0);transform:translateY(8px) scale(0.98);}60%{filter:blur(2px) saturate(0.5);}100%{opacity:1;filter:blur(0) saturate(1);transform:translateY(0) scale(1);}}
 .trip-card:hover{transform:translateY(-3px);background:var(--glass-md);border-color:var(--glass-border-hi);}
 .trip-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--space-4);}
@@ -1303,7 +1321,9 @@ async function showApp(){
   const meta=currentUser?.user_metadata||{};
   const displayName=meta.display_name||meta.full_name||meta.name||'';
   updateProfileDisplay(displayName||email);
-  // Load trips
+  // Show skeleton cards immediately while trips load
+  showView('dashboard');
+  renderSkeletons(3);
   await loadTrips();
   renderDashboard();
 }
@@ -1391,6 +1411,29 @@ document.querySelectorAll('.planner-tab').forEach(btn=>{
 
 
 // ── DASHBOARD ──
+
+function renderSkeletons(n=3){
+  const grid = document.getElementById('trips-grid');
+  grid.innerHTML = Array.from({length:n}, () => `
+    <div class="skel-card">
+      <div class="skel-title skeleton"></div>
+      <div class="skel-sub skeleton"></div>
+      <div class="skel-dates skeleton"></div>
+      <div class="skel-divider"></div>
+      <div class="skel-stats">
+        <div class="skel-stat"><div class="skel-stat-val skeleton"></div><div class="skel-stat-lbl skeleton"></div></div>
+        <div class="skel-stat"><div class="skel-stat-val skeleton"></div><div class="skel-stat-lbl skeleton"></div></div>
+        <div class="skel-stat"><div class="skel-stat-val skeleton"></div><div class="skel-stat-lbl skeleton"></div></div>
+      </div>
+      <div class="skel-pills">
+        <div class="skel-pill skeleton"></div>
+        <div class="skel-pill skeleton"></div>
+        <div class="skel-pill skeleton"></div>
+      </div>
+      <div class="skel-arrow skeleton"></div>
+    </div>`).join('');
+}
+
 function renderDashboard(){
   const totalSpend=trips.reduce((sum,t)=>(t.expenses||[]).reduce((s,e)=>s+e.amount,0)+sum,0);
   document.getElementById('ds-trips').textContent=trips.length;
