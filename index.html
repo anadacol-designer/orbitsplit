@@ -102,12 +102,14 @@ body::before{content:'';position:fixed;inset:0;z-index:1000;pointer-events:none;
 .hero-note{margin-top:20px;font-size:12px;color:var(--fg-3);animation:fadeUp 0.8s 0.4s ease both;}
 
 /* Floating mockup cards */
-.hero-visual{position:relative;width:100%;max-width:480px;margin:64px auto 0;height:300px;animation:fadeUp 0.8s 0.4s ease both;}
-.mock-card{position:absolute;background:var(--surface);border:1px solid var(--border-hi);border-radius:20px;padding:20px 24px;backdrop-filter:blur(16px);}
-.mock-card-1{left:0;top:0;width:200px;transform:rotate(-4deg);box-shadow:0 20px 60px rgba(0,0,0,0.5);}
-.mock-card-2{right:0;top:20px;width:220px;transform:rotate(3deg);box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:float 4s ease-in-out infinite;}
-.mock-card-3{left:50%;transform:translateX(-50%) rotate(-1deg);bottom:0;width:240px;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:float 5s 1s ease-in-out infinite;}
-@keyframes float{0%,100%{transform:translateX(-50%) rotate(-1deg) translateY(0);}50%{transform:translateX(-50%) rotate(-1deg) translateY(-10px);}}
+.hero-visual{position:relative;width:100%;max-width:520px;margin:64px auto 0;height:320px;animation:fadeUp 0.8s 0.4s ease both;user-select:none;}
+.mock-card{position:absolute;background:var(--surface);border:1px solid var(--border-hi);border-radius:20px;padding:20px 24px;backdrop-filter:blur(16px);cursor:grab;touch-action:none;will-change:transform;transition:box-shadow 200ms,border-color 200ms;}
+.mock-card:active{cursor:grabbing;}
+.mock-card.dragging{box-shadow:0 32px 80px rgba(0,0,0,0.7),0 0 0 1px var(--orange-glow);border-color:oklch(72% 0.22 38/0.4);transition:box-shadow 200ms,border-color 200ms;}
+.mock-card-1{left:0;top:0;width:200px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.mock-card-2{right:0;top:20px;width:220px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.mock-card-3{left:50%;margin-left:-120px;bottom:0;width:240px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.drag-hint{position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--fg-4);letter-spacing:0.06em;display:flex;align-items:center;gap:5px;white-space:nowrap;pointer-events:none;}
 .mock-label{font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-3);margin-bottom:8px;}
 .mock-val{font-family:var(--font-display);font-size:28px;color:var(--orange);}
 .mock-val-sm{font-family:var(--font-display);font-size:18px;color:var(--fg);}
@@ -336,6 +338,10 @@ footer{border-top:1px solid var(--border);padding:40px 24px;}
       <div class="check-row"><div class="check-box done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>Book flights</div>
       <div class="check-row"><div class="check-box done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>Reserve hotel</div>
       <div class="check-row"><div class="check-box"></div>Travel insurance</div>
+    </div>
+  <div class="drag-hint">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>
+      Drag the cards around
     </div>
   </div>
 </section>
@@ -591,6 +597,154 @@ const observer = new IntersectionObserver(entries => {
   entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
 }, {threshold: 0.1, rootMargin: '0px 0px -40px 0px'});
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── DRAGGABLE HERO CARDS ──
+(function(){
+  const container = document.querySelector('.hero-visual');
+  if(!container) return;
+
+  // Initial transforms for each card
+  const initials = {
+    'mock-card-1': {x:0,   y:0,  r:-4},
+    'mock-card-2': {x:0,   y:0,  r: 3},
+    'mock-card-3': {x:0,   y:0,  r:-1},
+  };
+
+  const state = {};
+
+  function getCards(){
+    return container.querySelectorAll('.mock-card');
+  }
+
+  function applyTransform(card, x, y, r, scale){
+    card.style.transform = `translate(${x}px, ${y}px) rotate(${r}deg) scale(${scale})`;
+  }
+
+  // Init positions
+  getCards().forEach(card => {
+    const key = Array.from(card.classList).find(c => c.startsWith('mock-card-'));
+    const init = initials[key] || {x:0, y:0, r:0};
+    state[key] = {x: init.x, y: init.y, r: init.r, dragging: false, vx: 0, vy: 0};
+    applyTransform(card, init.x, init.y, init.r, 1);
+  });
+
+  function springBack(card, key){
+    const s = state[key];
+    const target = initials[key] || {x:0, y:0, r:0};
+    let {x, y, r} = s;
+    let vx = s.vx * 0.3, vy = s.vy * 0.3;
+    const stiffness = 0.18, damping = 0.72;
+
+    function step(){
+      if(s.dragging) return;
+      const fx = (target.x - x) * stiffness;
+      const fy = (target.y - y) * stiffness;
+      const fr = (target.r - r) * stiffness;
+      vx = (vx + fx) * damping;
+      vy = (vy + fy) * damping;
+      const vr = (target.r - r) * 0.15;
+      x += vx; y += vy; r += vr;
+      applyTransform(card, x, y, r, 1);
+      s.x = x; s.y = y; s.r = r;
+      if(Math.abs(x - target.x) > 0.3 || Math.abs(y - target.y) > 0.3){
+        requestAnimationFrame(step);
+      } else {
+        x = target.x; y = target.y; r = target.r;
+        applyTransform(card, x, y, r, 1);
+        s.x = x; s.y = y; s.r = r;
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function startDrag(card, key, clientX, clientY){
+    const s = state[key];
+    s.dragging = true;
+    s.vx = 0; s.vy = 0;
+    card.classList.add('dragging');
+    // Lift card to top
+    getCards().forEach(c => c.style.zIndex = '1');
+    card.style.zIndex = '10';
+
+    const startX = clientX - s.x;
+    const startY = clientY - s.y;
+    let lastX = clientX, lastY = clientY;
+    let lastTime = Date.now();
+
+    const containerRect = container.getBoundingClientRect();
+    const cardW = card.offsetWidth;
+    const cardH = card.offsetHeight;
+    const pad = 16;
+
+    function onMove(ex, ey){
+      const now = Date.now();
+      const dt = Math.max(1, now - lastTime);
+      s.vx = (ex - lastX) / dt * 16;
+      s.vy = (ey - lastY) / dt * 16;
+      lastX = ex; lastY = ey; lastTime = now;
+
+      let nx = ex - startX;
+      let ny = ey - startY;
+
+      // Constrain to container bounds
+      const minX = -card.offsetLeft + pad;
+      const maxX = containerRect.width - card.offsetLeft - cardW - pad;
+      const minY = -card.offsetTop + pad;
+      const maxY = containerRect.height - card.offsetTop - cardH - pad;
+      nx = Math.max(minX, Math.min(maxX, nx));
+      ny = Math.max(minY, Math.min(maxY, ny));
+
+      // Tilt based on velocity
+      const tilt = initials[key].r + Math.max(-18, Math.min(18, s.vx * 0.4));
+      applyTransform(card, nx, ny, tilt, 1.04);
+      s.x = nx; s.y = ny; s.r = tilt;
+    }
+
+    function onEnd(){
+      s.dragging = false;
+      card.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onEnd);
+      springBack(card, key);
+    }
+
+    function onMouseMove(e){ onMove(e.clientX, e.clientY); }
+    function onTouchMove(e){ e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); }
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onTouchMove, {passive:false});
+    document.addEventListener('touchend', onEnd);
+  }
+
+  getCards().forEach(card => {
+    const key = Array.from(card.classList).find(c => c.startsWith('mock-card-'));
+    card.addEventListener('mousedown', e => { e.preventDefault(); startDrag(card, key, e.clientX, e.clientY); });
+    card.addEventListener('touchstart', e => { e.preventDefault(); startDrag(card, key, e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+  });
+
+  // Idle float animation when not dragging
+  let t = 0;
+  function idleFloat(){
+    t += 0.012;
+    getCards().forEach(card => {
+      const key = Array.from(card.classList).find(c => c.startsWith('mock-card-'));
+      const s = state[key];
+      if(!s.dragging){
+        const init = initials[key] || {x:0,y:0,r:0};
+        const offsets = {'mock-card-1': 0, 'mock-card-2': 1.3, 'mock-card-3': 2.6};
+        const phase = offsets[key] || 0;
+        const floatY = Math.sin(t + phase) * 8;
+        const floatR = init.r + Math.sin(t * 0.7 + phase) * 1.2;
+        card.style.transform = `translate(${s.x}px, ${s.y + floatY}px) rotate(${floatR}deg) scale(1)`;
+      }
+    });
+    requestAnimationFrame(idleFloat);
+  }
+  requestAnimationFrame(idleFloat);
+})();
 </script>
 </body>
 </html>
