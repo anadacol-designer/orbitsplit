@@ -231,12 +231,12 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
 .card-date{font-size:var(--text-2xs);color:var(--fg-tertiary);font-family:var(--font-mono);}
 
 /* ── METRICS ── */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-3);margin-bottom:var(--space-8);}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:var(--space-3);margin-bottom:var(--space-8);overflow:hidden;}
 .metric{border-radius:var(--radius-md);padding:var(--space-6);box-shadow:var(--top-shine),var(--inner-glow);}
 .metric.hi{background:linear-gradient(135deg,oklch(72% 0.22 38/0.25),oklch(65% 0.28 250/0.15));border-color:oklch(72% 0.22 38/0.30);box-shadow:var(--glow-orange),var(--top-shine);}
 .metric.hi .mv{color:var(--orange-hi);}
-.ml{font-size:var(--text-2xs);font-weight:var(--weight-semibold);letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:var(--space-2);}
-.mv{font-family:var(--font-mono);font-size:var(--text-2xl);font-weight:var(--weight-semibold);color:var(--fg-primary);letter-spacing:-0.02em;}
+.ml{font-size:var(--text-2xs);font-weight:var(--weight-semibold);letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:var(--space-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mv{font-family:var(--font-mono);font-size:clamp(var(--text-lg),2.5vw,var(--text-2xl));font-weight:var(--weight-semibold);color:var(--fg-primary);letter-spacing:-0.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
 /* ── LISTS ── */
 .exp-list{display:flex;flex-direction:column;gap:var(--space-2);}
@@ -333,7 +333,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
   .main{padding:var(--space-4);}
   .add-form{padding:var(--space-4);}
   .cards{grid-template-columns:1fr;}
-  .metrics{grid-template-columns:1fr 1fr;}
+  .metrics{grid-template-columns:repeat(auto-fit,minmax(110px,1fr));}
   .trips-grid{grid-template-columns:1fr;}
 
   /* Planner tabs — scrollable */
@@ -1204,6 +1204,94 @@ function showSignup(){
 }
 
 
+
+let currentExpenseId = null;
+
+function openExpenseDetail(id){
+  const t = currentTrip(); if(!t) return;
+  const e = t.expenses.find(x=>x.id===id);
+  if(!e) return;
+  currentExpenseId = id;
+
+  document.getElementById('ed-title').textContent = e.name;
+  document.getElementById('ed-amount').textContent = '€'+e.amount.toFixed(2);
+
+  const{payer, shares} = parseSplit(e.split, e.amount, e.method, e.customShares);
+  document.getElementById('ed-payer').textContent = payer;
+  const methodMap = {even:'Even split', custom:'Custom amounts', percent:'By percentage'};
+  document.getElementById('ed-method').textContent = methodMap[e.method]||'Even split';
+
+  // Breakdown
+  document.getElementById('ed-breakdown').innerHTML = Object.entries(shares)
+    .filter(([,amt])=>amt>0)
+    .map(([person,amt])=>`
+      <div class="glass" style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-3) var(--space-4);border-radius:var(--radius-xs);">
+        <span style="font-size:var(--text-sm);">${esc(person)}</span>
+        <span style="font-family:var(--font-mono);font-size:var(--text-sm);color:var(--fg-secondary);">€${amt.toFixed(2)}</span>
+      </div>`).join('');
+
+  // Bill photo
+  if(e.billUrl){
+    document.getElementById('ed-photo').src = e.billUrl;
+    document.getElementById('ed-photo-wrap').style.display = '';
+    document.getElementById('ed-upload-label').textContent = 'Tap to replace photo';
+    document.getElementById('ed-upload-area').style.borderStyle = 'solid';
+    document.getElementById('ed-upload-area').style.borderColor = 'var(--glass-border)';
+  } else {
+    document.getElementById('ed-photo-wrap').style.display = 'none';
+    document.getElementById('ed-upload-label').textContent = 'Tap to add a photo of the bill';
+    document.getElementById('ed-upload-area').style.borderStyle = 'dashed';
+  }
+
+  document.getElementById('modal-expense-detail').style.display = 'flex';
+}
+
+async function uploadBillPhoto(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 10*1024*1024){ alert('File must be under 10MB.'); return; }
+  const t = currentTrip(); if(!t) return;
+  const e = t.expenses.find(x=>x.id===currentExpenseId);
+  if(!e) return;
+
+  document.getElementById('ed-upload-progress').style.display='';
+  document.getElementById('ed-progress-bar').style.width='30%';
+
+  const path=`${currentUser.id}/${currentTripId}/bills/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+  const{error}=await sb.storage.from('trip-documents').upload(path,file,{upsert:false});
+  if(error){ alert('Upload failed: '+error.message); document.getElementById('ed-upload-progress').style.display='none'; return; }
+
+  document.getElementById('ed-progress-bar').style.width='100%';
+  const{data:urlData}=sb.storage.from('trip-documents').getPublicUrl(path);
+  e.billUrl = urlData.publicUrl;
+
+  document.getElementById('ed-photo').src = e.billUrl;
+  document.getElementById('ed-photo-wrap').style.display='';
+  document.getElementById('ed-upload-label').textContent='Tap to replace photo';
+  document.getElementById('ed-upload-progress').style.display='none';
+  document.getElementById('ed-progress-bar').style.width='0%';
+
+  debouncedSave(t.id);
+  renderExpenses();
+}
+
+function handleBillDrop(ev){
+  ev.preventDefault();
+  document.getElementById('ed-upload-area').style.borderColor='var(--glass-border)';
+  const file=ev.dataTransfer.files[0];
+  if(!file) return;
+  const dt=new DataTransfer(); dt.items.add(file);
+  document.getElementById('ed-file').files=dt.files;
+  uploadBillPhoto(document.getElementById('ed-file'));
+}
+
+function deleteCurrentExpense(){
+  if(!currentExpenseId) return;
+  closeModal('modal-expense-detail');
+  delExp(currentExpenseId);
+  currentExpenseId=null;
+}
+
 async function signInWithGoogle(){
   gaEvent('login', {method:'google'});
   const{error}=await sb.auth.signInWithOAuth({
@@ -1884,10 +1972,13 @@ function renderExpenses(){
   document.getElementById('exp-list').innerHTML=t.expenses.map(e=>{
     const{payer}=parseSplit(e.split,e.amount,e.method,e.customShares);
     const methodLabel=e.method==='custom'?'custom split':e.method==='percent'?'% split':'even split';
-    return`<div class="exp-row glass"><div class="exp-name">${esc(e.name)}</div>
-    <div class="exp-split">${esc(payer)} paid · ${methodLabel}</div>
-    <div class="exp-amt">€${e.amount.toFixed(2)}</div>
-    <button class="exp-del" onclick="delExp(${e.id})">×</button></div>`;}).join('');
+    const hasBill=e.billUrl?`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`:'';
+    return`<div class="exp-row glass" style="cursor:pointer;" onclick="openExpenseDetail(${e.id})">
+      <div class="exp-name">${esc(e.name)} ${hasBill}</div>
+      <div class="exp-split">${esc(payer)} paid · ${methodLabel}</div>
+      <div class="exp-amt">€${e.amount.toFixed(2)}</div>
+      <button class="exp-del" onclick="event.stopPropagation();delExp(${e.id})">×</button>
+    </div>`;}).join('');
   const newExpCard=`<div class="trip-card-new" onclick="openAddExpense()" style="margin-top:var(--space-3);"><div class="trip-card-new-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="trip-card-new-label">Add expense</div><div class="trip-card-new-sub">Track a bill or payment</div></div>`;
   document.getElementById('exp-list').innerHTML+=newExpCard;
   document.getElementById('exp-empty').style.display='none';
@@ -2154,6 +2245,57 @@ init();
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
         Delete trip
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPENSE DETAIL MODAL -->
+<div class="modal-overlay" id="modal-expense-detail" style="display:none;">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-title" id="ed-title">Expense details</div>
+    <button class="modal-close" onclick="closeModal('modal-expense-detail')">×</button>
+    <div class="modal-fields">
+      <!-- Bill photo -->
+      <div id="ed-photo-wrap" style="display:none;border-radius:var(--radius-md);overflow:hidden;margin-bottom:var(--space-2);">
+        <img id="ed-photo" src="" alt="Bill" style="width:100%;max-height:240px;object-fit:cover;display:block;border-radius:var(--radius-md);"/>
+      </div>
+      <!-- Details rows -->
+      <div class="glass" style="border-radius:var(--radius-md);padding:var(--space-5);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);">
+          <div style="font-size:var(--text-2xs);font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);">Amount</div>
+          <div id="ed-amount" style="font-family:var(--font-mono);font-size:var(--text-xl);font-weight:600;color:var(--orange);"></div>
+        </div>
+        <div style="border-top:1px solid var(--glass-border);padding-top:var(--space-4);display:flex;flex-direction:column;gap:var(--space-3);">
+          <div style="display:flex;justify-content:space-between;font-size:var(--text-xs);">
+            <span style="color:var(--fg-tertiary);">Paid by</span><span id="ed-payer" style="font-weight:500;"></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--text-xs);">
+            <span style="color:var(--fg-tertiary);">Split method</span><span id="ed-method" style="font-weight:500;"></span>
+          </div>
+        </div>
+      </div>
+      <!-- Per-person breakdown -->
+      <div>
+        <div style="font-size:var(--text-2xs);font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:var(--space-3);">Breakdown</div>
+        <div id="ed-breakdown" style="display:flex;flex-direction:column;gap:var(--space-2);"></div>
+      </div>
+      <!-- Bill photo upload -->
+      <div>
+        <div style="font-size:var(--text-2xs);font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:var(--space-3);">Bill photo</div>
+        <div id="ed-upload-area" onclick="document.getElementById('ed-file').click()" style="border:2px dashed var(--glass-border);border-radius:var(--radius-md);padding:var(--space-5);text-align:center;cursor:pointer;transition:border-color 200ms;" ondragover="event.preventDefault();this.style.borderColor='var(--orange)'" ondragleave="this.style.borderColor='var(--glass-border)'" ondrop="handleBillDrop(event)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--fg-tertiary)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:6px;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <div id="ed-upload-label" style="font-size:var(--text-xs);color:var(--fg-tertiary);">Tap to add a photo of the bill</div>
+        </div>
+        <input type="file" id="ed-file" accept="image/*" capture="environment" style="display:none;" onchange="uploadBillPhoto(this)"/>
+        <div id="ed-upload-progress" style="display:none;margin-top:var(--space-3);">
+          <div style="font-size:var(--text-xs);color:var(--fg-tertiary);margin-bottom:6px;">Uploading…</div>
+          <div style="height:3px;background:var(--glass-sm);border-radius:3px;overflow:hidden;"><div id="ed-progress-bar" style="height:100%;width:0%;background:var(--orange);transition:width 300ms;border-radius:3px;"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deleteCurrentExpense()">Delete</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-expense-detail')">Close</button>
     </div>
   </div>
 </div>
