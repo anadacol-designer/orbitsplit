@@ -810,12 +810,16 @@ function gaEvent(name, params){
         <label>Bill photo <span style="color:var(--fg-disabled);font-weight:400;">(optional)</span></label>
         <div id="e-bill-dropzone" onclick="document.getElementById('e-bill-file').click()" style="border:2px dashed var(--glass-border);border-radius:var(--radius-md);padding:var(--space-4);text-align:center;cursor:pointer;transition:border-color 200ms,background 200ms;" ondragover="event.preventDefault();this.style.borderColor='var(--orange)'" ondragleave="this.style.borderColor='var(--glass-border)'" ondrop="handleAddExpenseBillDrop(event)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-tertiary)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:4px;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          <div id="e-bill-label" style="font-size:var(--text-xs);color:var(--fg-tertiary);">Tap to add a photo of the bill<br/><span style="font-size:11px;opacity:0.6;">JPG, PNG, HEIC — max 5MB</span></div>
+          <div id="e-bill-label" style="font-size:var(--text-xs);color:var(--fg-tertiary);">Tap to add a photo of the bill<br/><span style="font-size:11px;opacity:0.6;">JPG, PNG, HEIC — max 5MB · amount auto-detected</span></div>
         </div>
         <input type="file" id="e-bill-file" accept="image/jpeg,image/png,image/heic,image/heif" capture="environment" style="display:none;" onchange="previewExpenseBill(this)"/>
         <div id="e-bill-preview" style="display:none;margin-top:var(--space-2);position:relative;">
           <img id="e-bill-thumb" src="" alt="" style="width:100%;max-height:160px;object-fit:cover;border-radius:var(--radius-sm);display:block;"/>
           <button onclick="clearExpenseBill()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">×</button>
+          <div id="e-bill-scanning" style="display:none;position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,0.75);border-radius:100px;padding:4px 12px;font-size:11px;font-weight:600;color:#fff;display:none;align-items:center;gap:6px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2.5" stroke-linecap="round" style="animation:spin 1s linear infinite;"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-opacity="0.3"/><path d="M21 12a9 9 0 00-9-9"/></svg>
+            Reading bill…
+          </div>
         </div>
       </div>
     </div>
@@ -1227,12 +1231,51 @@ function previewExpenseBill(input){
   if(file.size > 5*1024*1024){ alert('File must be under 5MB.'); input.value=''; return; }
   pendingExpenseBill = file;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     document.getElementById('e-bill-thumb').src = e.target.result;
     document.getElementById('e-bill-preview').style.display = '';
     document.getElementById('e-bill-dropzone').style.display = 'none';
+    // Auto-read amount from bill
+    await scanBillAmount(e.target.result, file.type||'image/jpeg');
   };
   reader.readAsDataURL(file);
+}
+
+async function scanBillAmount(dataUrl, mimeType){
+  const scanEl = document.getElementById('e-bill-scanning');
+  scanEl.style.display = 'flex';
+  try {
+    const base64 = dataUrl.split(',')[1];
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 100,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image', source:{type:'base64', media_type:mimeType, data:base64}},
+            {type:'text', text:'Look at this bill/receipt. Reply with ONLY the final total amount as a number (e.g. 24.50). No currency symbol, no explanation, just the number. If you cannot find a total, reply with "0".'}
+          ]
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text?.trim()||'0';
+    const amount = parseFloat(text.replace(/[^0-9.]/g,''));
+    if(amount > 0){
+      const amtEl = document.getElementById('e-amt');
+      amtEl.value = amount.toFixed(2);
+      amtEl.style.borderColor = 'var(--orange)';
+      setTimeout(()=>amtEl.style.borderColor='', 2000);
+      refreshSplitFields();
+    }
+  } catch(err){
+    console.warn('Bill scan failed:', err);
+  } finally {
+    scanEl.style.display = 'none';
+  }
 }
 
 function handleAddExpenseBillDrop(ev){
