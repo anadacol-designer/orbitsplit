@@ -821,7 +821,7 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
     <div id="edit-delete-confirm" style="display:none;background:oklch(65% 0.25 18/0.12);border:1px solid oklch(65% 0.25 18/0.25);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);margin-bottom:var(--space-4);font-size:var(--text-xs);color:oklch(80% 0.15 18);">
       Are you sure? This will permanently delete this trip and all its data.
       <div style="display:flex;gap:var(--space-2);margin-top:var(--space-3);">
-        <button class="btn btn-danger btn-inline" onclick="deleteTripConfirm()" style="flex:1;">Yes, delete</button>
+        <button class="btn btn-danger btn-inline" onclick="document.getElementById('edit-delete-confirm').style.display='none';doDeleteTrip()" style="flex:1;">Yes, delete</button>
         <button class="btn btn-ghost" onclick="document.getElementById('edit-delete-confirm').style.display='none'" style="flex:1;">Cancel</button>
       </div>
     </div>
@@ -1408,6 +1408,22 @@ async function saveEditTrip(){
   renderDashboard();
 }
 
+
+async function doDeleteTrip(){
+  const id = editingTripId;
+  if(!id){ console.error('doDeleteTrip: no id'); return; }
+  const uid = currentUser?.id;
+  console.log('🗑 doDeleteTrip:', id, uid);
+  await sb.from('trip_data').delete().eq('trip_id', id).eq('user_id', uid);
+  const{error, data} = await sb.from('trips').delete().eq('id', id).eq('user_id', uid).select();
+  console.log('trips delete:', data, error);
+  if(error){ alert('Delete failed: ' + error.message); return; }
+  trips = trips.filter(t => t.id !== id);
+  editingTripId = null;
+  if(currentTripId === id) goHome();
+  else renderDashboard();
+}
+
 async function deleteTripConfirm(){
   const id=editingTripId;
   if(!id){alert('No trip selected — id is null.');return;}
@@ -1439,7 +1455,7 @@ async function deleteTripConfirm(){
 // ── CONTEXT MENU ──
 function openCtx(e,id){e.stopPropagation();ctxTripId=id;const menu=document.getElementById('ctx-menu');menu.style.display='block';const x=Math.min(e.clientX,window.innerWidth-180);const y=Math.min(e.clientY,window.innerHeight-100);menu.style.left=x+'px';menu.style.top=y+'px';}
 function ctxEdit(){closeCtx();openEditTrip(ctxTripId);}
-function ctxDelete(){closeCtx();editingTripId=ctxTripId;deleteTripConfirm();}
+function ctxDelete(){const id=ctxTripId;closeCtx();editingTripId=id;document.getElementById('modal-delete-trip').style.display='flex';}
 function closeCtx(){document.getElementById('ctx-menu').style.display='none';ctxTripId=null;}
 document.addEventListener('click',()=>closeCtx());
 
@@ -1993,6 +2009,21 @@ init();
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
     Sign out
   </button>
+</div>
+
+<!-- DELETE TRIP CONFIRM MODAL -->
+<div class="modal-overlay" id="modal-delete-trip" style="display:none;">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title" style="color:oklch(75% 0.2 18);">Delete trip?</div>
+    <p style="font-size:var(--text-sm);color:var(--fg-secondary);margin-bottom:var(--space-6);">This will permanently delete this trip and all its data. This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('modal-delete-trip').style.display='none'">Cancel</button>
+      <button class="btn btn-danger btn-inline" onclick="document.getElementById('modal-delete-trip').style.display='none';doDeleteTrip()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        Delete trip
+      </button>
+    </div>
+  </div>
 </div>
 </body>
 </html>
