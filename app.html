@@ -1127,8 +1127,8 @@ function showSignup(){
 
 
 async function signInWithGoogle(){
-  const{error}=gaEvent('login', {method:'google'});
-  await sb.auth.signInWithOAuth({
+  gaEvent('login', {method:'google'});
+  const{error}=await sb.auth.signInWithOAuth({
     provider:'google',
     options:{redirectTo:'https://orbitsplit.com/app.html'}
   });
