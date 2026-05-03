@@ -1701,20 +1701,42 @@ async function checkPendingInvite(){
   const token = params.get('invite');
   if(!token) return;
 
-  const{data:invite,error}=await sb.from('trip_invites')
+  console.log('🔗 Processing invite token:', token);
+
+  const{data:invite,error:invErr}=await sb.from('trip_invites')
     .select('*').eq('token',token).eq('accepted',false).single();
-  if(error||!invite) return;
+  console.log('invite lookup:', invite, invErr);
+  if(invErr||!invite){
+    console.warn('Invite not found or already accepted');
+    window.history.replaceState({}, '', '/app.html');
+    return;
+  }
+
+  // Check if already a member
+  const{data:existing}=await sb.from('trip_members')
+    .select('id').eq('trip_id',invite.trip_id).eq('user_id',currentUser.id).single();
+  if(existing){
+    console.log('Already a member, just opening trip');
+    window.history.replaceState({}, '', '/app.html');
+    window._pendingOpenTripId = invite.trip_id;
+    return;
+  }
 
   // Add current user as member
   const{error:me}=await sb.from('trip_members').insert({
     trip_id:invite.trip_id, user_id:currentUser.id, role:'member'
   });
+  console.log('trip_members insert error:', me);
 
   if(!me){
-    await sb.from('trip_invites').update({accepted:true}).eq('token',token);
+    const{error:upErr}=await sb.from('trip_invites').update({accepted:true}).eq('token',token);
+    console.log('invite accept error:', upErr);
     window.history.replaceState({}, '', '/app.html');
-    // Store trip_id to open after loadTrips completes
     window._pendingOpenTripId = invite.trip_id;
+  } else {
+    console.error('Failed to add member:', JSON.stringify(me));
+    showToast('Could not accept invite: ' + me.message);
+    window.history.replaceState({}, '', '/app.html');
   }
 }
 
