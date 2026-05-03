@@ -1728,15 +1728,16 @@ async function migrateExistingTrips(){
 }
 
 async function loadTrips(){
-  // Lightweight load: fetch trip headers + members only (no trip_data)
+  // Query via trip_members (respects new RLS policy)
   const{data,error}=await sb.from('trips')
-    .select('id, name, destination, start_date, end_date, travellers, trip_members(user_id, role)')
+    .select('id, name, destination, start_date, end_date, travellers, user_id, trip_members(user_id, role)')
     .order('created_at',{ascending:false});
-  if(error){console.error(error);return;}
+  if(error){console.error('loadTrips error:',error);return;}
   trips=(data||[]).map(t=>{
     const members=t.trip_members||[];
-    const isOwner=members.some(m=>m.user_id===currentUser.id&&m.role==='owner');
-    // Preserve existing trip_data if already loaded (avoid losing unsaved changes)
+    // Consider owner if in trip_members as owner, OR if user_id matches (legacy trips)
+    const isOwner=members.some(m=>m.user_id===currentUser.id&&m.role==='owner')
+                  ||(t.user_id===currentUser.id&&!members.length);
     const existing=trips.find(x=>x.id===t.id);
     return{
       id:t.id, name:t.name, destination:t.destination,
@@ -1770,7 +1771,7 @@ async function saveTrip(tripId){
   try{
     // Upsert trip row
     const{error:te}=await sb.from('trips').upsert({
-      id:t.id,
+      id:t.id, user_id:currentUser.id,
       name:t.name, destination:t.destination||null,
       start_date:t.startDate||null, end_date:t.endDate||null,
       travellers:t.travellers||[]
