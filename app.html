@@ -639,6 +639,7 @@ function gaEvent(name, params){
         <div style="display:flex;gap:var(--space-8);">
           <div><div class="stat-val" id="pl-places">0</div><div class="stat-label">Places</div></div>
           <div><div class="stat-val" id="pl-spend">€0</div><div class="stat-label">Spend</div></div>
+          <div id="pl-balance-wrap" style="display:none;"><div class="stat-val" id="pl-balance" style="font-size:var(--text-lg);">€0</div><div class="stat-label" id="pl-balance-label">You lent</div></div>
         </div>
       </div>
     </div>
@@ -1848,6 +1849,7 @@ function renderPlanner(){
   document.getElementById('pl-dates').textContent=dateStr;
   document.getElementById('pl-places').textContent=(t.places||[]).length;
   document.getElementById('pl-spend').textContent='€'+(t.expenses||[]).reduce((s,e)=>s+e.amount,0).toFixed(0);
+  updatePlannerBalance();
   renderPlaces();renderExpenses();renderDocs();renderChecks();renderJournal();renderPictures();
   const notesEl=document.getElementById('notes'); if(notesEl) notesEl.value=t.notes||'';
   initJournalDate();
@@ -2056,7 +2058,7 @@ async function addExpense(){
   renderExpenses(); debouncedSave(t.id);
   document.getElementById('pl-spend').textContent='€'+t.expenses.reduce((s,e)=>s+e.amount,0).toFixed(0);
 }
-function delExp(id){const t=currentTrip();if(!t)return;t.expenses=t.expenses.filter(e=>e.id!==id);renderExpenses();debouncedSave(t.id);document.getElementById('pl-spend').textContent='€'+t.expenses.reduce((s,e)=>s+e.amount,0).toFixed(0);}
+function delExp(id){const t=currentTrip();if(!t)return;t.expenses=t.expenses.filter(e=>e.id!==id);renderExpenses();debouncedSave(t.id);document.getElementById('pl-spend').textContent='€'+t.expenses.reduce((s,e)=>s+e.amount,0).toFixed(0);updatePlannerBalance();}
 function getTravellers(){
   const t=currentTrip(); if(!t) return [];
   return t.travellers&&t.travellers.length?t.travellers:[];
@@ -2150,6 +2152,43 @@ function expCategoryIcon(name, method){
     path='<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>';
   }
   return `<div class="exp-ticon" style="background:${bg};"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${path}</svg></div>`;
+}
+
+
+function updatePlannerBalance(){
+  const t=currentTrip(); if(!t) return;
+  const me=getMe();
+  const travellers=t.travellers&&t.travellers.length?t.travellers:[];
+  if(!travellers.length){
+    document.getElementById('pl-balance-wrap').style.display='none';
+    return;
+  }
+  let totalLent=0, totalBorrowed=0;
+  t.expenses.forEach(e=>{
+    const{payer,shares}=parseSplit(e.split,e.amount,e.method,e.customShares);
+    const myShare=shares[me]||0;
+    const iPaid=payer===me;
+    const othersShare=e.amount-myShare;
+    if(iPaid && othersShare>0.01) totalLent+=othersShare;
+    else if(!iPaid && myShare>0.01) totalBorrowed+=myShare;
+  });
+  const wrap=document.getElementById('pl-balance-wrap');
+  const val=document.getElementById('pl-balance');
+  const lbl=document.getElementById('pl-balance-label');
+  const net=totalLent-totalBorrowed;
+  if(Math.abs(net)<0.01){
+    wrap.style.display='none';
+  } else if(net>0){
+    wrap.style.display='';
+    val.textContent='€'+net.toFixed(0);
+    val.style.color='var(--mint)';
+    lbl.textContent='You lent';
+  } else {
+    wrap.style.display='';
+    val.textContent='€'+Math.abs(net).toFixed(0);
+    val.style.color='var(--rose)';
+    lbl.textContent='You borrowed';
+  }
 }
 
 function renderExpenses(){
