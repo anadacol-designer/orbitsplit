@@ -1593,8 +1593,7 @@ async function showApp(){
   // Show skeleton cards immediately while trips load
   showView('dashboard');
   renderSkeletons(3);
-  await migrateExistingTrips();
-  await checkPendingInvite();
+  await Promise.all([migrateExistingTrips(), checkPendingInvite()]);
   await loadTrips();
   renderDashboard();
 }
@@ -1706,41 +1705,63 @@ async function checkPendingInvite(){
 }
 
 async function migrateExistingTrips(){
-  // For trips created before trip_members existed, add owner row if missing
-  const{data:myTrips}=await sb.from('trips')
-    .select('id')
-    .eq('user_id', currentUser.id);  // old-style check still works temporarily
-  if(!myTrips||!myTrips.length) return;
-  for(const t of myTrips){
+  // Skip if already migrated this session
+  if(sessionStorage.getItem('orbitsplit_migrated')) return;
+  try{
+    // Single query: get all trips owned by this user that have no member row
+    const{data:myTrips}=await sb.from('trips')
+      .select('id')
+      .eq('user_id', currentUser.id);
+    if(!myTrips||!myTrips.length){sessionStorage.setItem('orbitsplit_migrated','1');return;}
     const{data:existing}=await sb.from('trip_members')
-      .select('id').eq('trip_id',t.id).eq('user_id',currentUser.id).single();
-    if(!existing){
-      await sb.from('trip_members').insert({
-        trip_id:t.id, user_id:currentUser.id, role:'owner'
-      });
+      .select('trip_id')
+      .eq('user_id', currentUser.id);
+    const existingIds=new Set((existing||[]).map(m=>m.trip_id));
+    const missing=myTrips.filter(t=>!existingIds.has(t.id));
+    if(missing.length){
+      await sb.from('trip_members').insert(
+        missing.map(t=>({trip_id:t.id, user_id:currentUser.id, role:'owner'}))
+      );
     }
-  }
+    sessionStorage.setItem('orbitsplit_migrated','1');
+  }catch(e){console.warn('Migration skipped:',e);}
 }
 
 async function loadTrips(){
+  // Lightweight load: fetch trip headers + members only (no trip_data)
   const{data,error}=await sb.from('trips')
-    .select('*, trip_data(*), trip_members(user_id, role)')
+    .select('id, name, destination, start_date, end_date, travellers, trip_members(user_id, role)')
     .order('created_at',{ascending:false});
   if(error){console.error(error);return;}
   trips=(data||[]).map(t=>{
-    const d=t.trip_data?.[0]||{};
     const members=t.trip_members||[];
     const isOwner=members.some(m=>m.user_id===currentUser.id&&m.role==='owner');
+    // Preserve existing trip_data if already loaded (avoid losing unsaved changes)
+    const existing=trips.find(x=>x.id===t.id);
     return{
       id:t.id, name:t.name, destination:t.destination,
       startDate:t.start_date, endDate:t.end_date,
       travellers:t.travellers||[],
-      places:d.places||[], expenses:d.expenses||[], docs:d.docs||[],
-      checks:d.checks||[], journal:d.journal||[], pictures:d.pictures||[],
-      notes:d.notes||'', dataId:d.id||null,
+      places:existing?.places||[], expenses:existing?.expenses||[], docs:existing?.docs||[],
+      checks:existing?.checks||[], journal:existing?.journal||[], pictures:existing?.pictures||[],
+      notes:existing?.notes||'', dataId:existing?.dataId||null,
+      loaded:existing?.loaded||false,
       isOwner, members
     };
   });
+}
+
+async function loadTripData(tripId){
+  // Fetch full trip_data only when needed (opening a trip)
+  const t=tripById(tripId); if(!t) return;
+  if(t.loaded) return; // already loaded
+  const{data,error}=await sb.from('trip_data')
+    .select('*').eq('trip_id',tripId).single();
+  if(error&&error.code!=='PGRST116') return;
+  const d=data||{};
+  t.places=d.places||[]; t.expenses=d.expenses||[]; t.docs=d.docs||[];
+  t.checks=d.checks||[]; t.journal=d.journal||[]; t.pictures=d.pictures||[];
+  t.notes=d.notes||''; t.dataId=d.id||null; t.loaded=true;
 }
 
 async function saveTrip(tripId){
@@ -1787,10 +1808,12 @@ function goHome(){
   if(!currentUser){window.location.href='/';return;}
   currentTripId=null; showView('dashboard'); renderDashboard();
 }
-function openTrip(id){
+async function openTrip(id){
   autocompleteInstance = null;
   setTimeout(attachAutocomplete, 200);
-  currentTripId=id; showView('planner'); renderPlanner();
+  currentTripId=id;
+  if(!tripById(id)?.loaded) await loadTripData(id);
+  showView('planner'); renderPlanner();
   document.querySelectorAll('.planner-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.planner-section').forEach(s=>s.classList.remove('active'));
   document.querySelector('[data-psec="places"]').classList.add('active');
@@ -1908,9 +1931,9 @@ async function createTrip(){
 function openEditTrip(id){
   if(!id) return;
   const t=tripById(id);
-  if(t&&!t.isOwner){alert('Only the trip owner can edit this trip.');return;}
-  editingTripId=id; const t=tripById(id);
   if(!t) return;
+  if(!t.isOwner){alert('Only the trip owner can edit this trip.');return;}
+  editingTripId=id;
   document.getElementById('et-name').value=t.name;
   document.getElementById('et-dest').value=t.destination||'';
   document.getElementById('et-travellers').value=(t.travellers||[]).join(', ');
