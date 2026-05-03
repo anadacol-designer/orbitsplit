@@ -190,7 +190,7 @@ section{position:relative;z-index:10;padding:100px 24px;}
 .cta-banner{background:linear-gradient(135deg,oklch(45% 0.25 290/0.3),oklch(65% 0.28 250/0.2),oklch(72% 0.22 38/0.15));
   border:1px solid var(--border-hi);border-radius:32px;padding:80px 48px;text-align:center;
   position:relative;overflow:hidden;}
-.cta-banner::before{content:'';position:absolute;inset:0;
+.cta-banner::before{content:'';position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(ellipse at 50% 100%,oklch(72% 0.22 38/0.2),transparent 60%);}
 .cta-title{font-family:var(--font-display);font-size:clamp(36px,6vw,64px);margin-bottom:20px;position:relative;}
 .cta-sub{font-size:18px;color:var(--fg-2);margin-bottom:40px;position:relative;}
@@ -280,7 +280,7 @@ footer{border-top:1px solid var(--border);padding:40px 24px;}
 </defs>
 </svg>
   </a>
-  <a href="https://orbitsplit.com/app.html" class="nav-cta">
+  <a href="https://orbitsplit.com/app.html?signup=1" class="nav-cta">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 3h6v6M10 14L21 3M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/></svg>
     Open app
   </a>
@@ -297,7 +297,7 @@ footer{border-top:1px solid var(--border);padding:40px 24px;}
   <div style="position:relative;z-index:10;">
     <div class="hero-eyebrow">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
-      Plan the trip — Keep the stories
+      Organize the trip — keep the stories
       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
     </div>
     <h1 class="hero-title">
@@ -306,7 +306,7 @@ footer{border-top:1px solid var(--border);padding:40px 24px;}
     </h1>
     <p class="hero-sub">OrbitSplit brings your whole trip together — itinerary, expenses, documents, and memories — all in one beautiful place.</p>
     <div class="hero-actions">
-      <a href="https://orbitsplit.com/app.html" class="btn-hero">
+      <a href="https://orbitsplit.com/app.html?signup=1" class="btn-hero">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         Start for free
       </a>
@@ -518,7 +518,7 @@ footer{border-top:1px solid var(--border);padding:40px 24px;}
     <div class="cta-banner reveal">
       <h2 class="cta-title">Your next trip<br/>starts here.</h2>
       <p class="cta-sub">Free to use. No credit card. Just better travel.</p>
-      <a href="https://orbitsplit.com/app.html" class="btn-hero" style="font-size:17px;padding:17px 40px;">
+      <a href="https://orbitsplit.com/app.html?signup=1" class="btn-hero" style="font-size:17px;padding:17px 40px;position:relative;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         Get started free
       </a>
