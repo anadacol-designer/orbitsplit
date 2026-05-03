@@ -2008,23 +2008,17 @@ document.getElementById('modal-new').addEventListener('click',function(e){if(e.t
 async function sendTripInvites(tripId, emails){
   const results = [];
   for(const email of emails){
-    if(!email.includes('@')) continue; // skip non-emails silently
-    // Check if already a member
-    const{data:existing}=await sb.from('trip_members')
-      .select('id').eq('trip_id',tripId)
-      .eq('user_id', (await sb.from('trip_invites').select('invited_email').eq('trip_id',tripId).eq('invited_email',email).single())?.data?.invited_email||'__none__')
-      .single();
-    // Check if already invited
+    if(!email.includes('@')) continue;
+    // Check if already invited (pending)
     const{data:alreadyInvited}=await sb.from('trip_invites')
-      .select('id').eq('trip_id',tripId).eq('invited_email',email).eq('accepted',false).single();
+      .select('id').eq('trip_id',tripId).eq('invited_email',email).eq('accepted',false).maybeSingle();
     if(alreadyInvited) continue;
     const token=crypto.randomUUID();
     const{error}=await sb.from('trip_invites').insert({
       trip_id:tripId, invited_by:currentUser.id, invited_email:email, token, accepted:false
     });
-    if(!error){
-      results.push({email, token});
-    }
+    if(!error) results.push({email, token});
+    else console.error('invite insert error:', error);
   }
   return results;
 }
