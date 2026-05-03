@@ -699,7 +699,7 @@ function gaEvent(name, params){
         <div class="sh"><div style="display:flex;align-items:baseline;gap:var(--space-3);flex:1;min-width:0;"><h2>Pictures</h2><span class="ct" id="c-pictures">0 photos</span></div><button class="btn btn-primary btn-inline" onclick="document.getElementById('pic-input').click()" style="margin-left:auto;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add photos
           </button></div>
-        <input type="file" id="pic-input" accept="image/*" multiple style="display:none;" onchange="addPictures(event)"/>
+        <input type="file" id="pic-input" accept="image/jpeg,image/png,image/heic,image/heif" multiple style="display:none;" onchange="addPictures(event)"/>
         <div class="pictures-grid" id="pictures-grid"></div>
         <div class="empty" id="pictures-empty" style="display:none;"></div>
       </div>
@@ -793,6 +793,7 @@ function gaEvent(name, params){
     <button class="modal-close" onclick="closeModal('modal-add-expense')">×</button>
     <div class="modal-fields">
       <div class="field"><label>Description</label><input type="text" id="e-name" placeholder="Train, dinner, museum tickets…" maxlength="100"/></div>
+      <div class="field"><label>Date</label><input type="date" id="e-date"/></div>
       <div class="field"><label>Amount (€)</label><input type="number" id="e-amt" placeholder="0.00" min="0" max="999999" step="0.01" oninput="refreshSplitFields()"/></div>
       <div class="field"><label>Who paid</label><select id="e-split"></select></div>
       <div class="field">
@@ -1301,6 +1302,7 @@ function openExpenseDetail(id){
   currentExpenseId = id;
 
   document.getElementById('ed-name').value = e.name;
+  document.getElementById('ed-date').value = e.date||'';
   document.getElementById('ed-amt').value = e.amount.toFixed(2);
   document.getElementById('ed-split').innerHTML = buildSplitOptions(e.split);
   document.getElementById('ed-method').value = e.method||'even';
@@ -1366,7 +1368,7 @@ async function saveEditExpense(){
   const n = document.getElementById('ed-name').value.trim();
   const a = parseFloat(document.getElementById('ed-amt').value);
   if(!n||isNaN(a)||a<=0) return;
-  e.name=n; e.amount=a;
+  e.name=n; e.amount=a; e.date=document.getElementById('ed-date').value;
   e.split=document.getElementById('ed-split').value;
   e.method=document.getElementById('ed-method').value;
   const me=getMe(); const all=[me,...getTravellers()];
@@ -1503,7 +1505,8 @@ function setDateLimits(){
   const maxDate = new Date();
   maxDate.setFullYear(maxDate.getFullYear() + 100);
   const max = maxDate.toISOString().split('T')[0];
-  document.querySelectorAll('input[type="date"]').forEach(el => el.max = max);
+  const today = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('input[type="date"]').forEach(el => { el.max = max; });
 }
 
 async function init(){
@@ -1993,6 +1996,7 @@ async function addExpense(){
   const a=parseFloat(document.getElementById('e-amt').value);
   if(!n||isNaN(a)||a<=0) return;
   const splitVal=document.getElementById('e-split').value||getMe()+':split';
+  const expDate=document.getElementById('e-date').value;
   const method=document.getElementById('e-method').value;
   const me=getMe(); const all=[me,...getTravellers()];
 
@@ -2024,12 +2028,12 @@ async function addExpense(){
     }
   }
 
-  t.expenses.push({id:Date.now(),name:n,amount:a,split:splitVal,method,customShares,billUrl});
+  t.expenses.push({id:Date.now(),name:n,amount:a,split:splitVal,method,customShares,billUrl,date:expDate});
   pendingExpenseBill = null;
   clearExpenseBill();
   btn.disabled = false; btn.textContent = 'Add expense';
   closeModal('modal-add-expense');
-  document.getElementById('e-name').value='';document.getElementById('e-amt').value='';
+  document.getElementById('e-name').value='';document.getElementById('e-amt').value='';document.getElementById('e-date').value='';
   renderExpenses(); debouncedSave(t.id);
   document.getElementById('pl-spend').textContent='€'+t.expenses.reduce((s,e)=>s+e.amount,0).toFixed(0);
 }
@@ -2137,10 +2141,11 @@ function renderExpenses(){
   document.getElementById('exp-list').innerHTML=t.expenses.map(e=>{
     const{payer}=parseSplit(e.split,e.amount,e.method,e.customShares);
     const methodLabel=e.method==='custom'?'custom split':e.method==='percent'?'% split':'even split';
+    const dateLabel=e.date?` · ${new Date(e.date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`:''; 
     const hasBill=e.billUrl?`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`:'';
     return`<div class="exp-row glass" style="cursor:pointer;" onclick="openExpenseDetail(${e.id})">
       <div class="exp-name">${esc(e.name)} ${hasBill}</div>
-      <div class="exp-split">${esc(payer)} paid · ${methodLabel}</div>
+      <div class="exp-split">${esc(payer)} paid · ${methodLabel}${dateLabel}</div>
       <div class="exp-amt">€${e.amount.toFixed(2)}</div>
       <button class="exp-del" onclick="event.stopPropagation();delExp(${e.id})">×</button>
     </div>`;}).join('');
@@ -2348,33 +2353,109 @@ function renderJournal(){
 }
 
 // ── PICTURES ──
-function addPictures(event){
+async function addPictures(event){
   const t=currentTrip(); if(!t) return;
-  const files=Array.from(event.target.files);
-  let loaded=0;
-  files.forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      t.pictures.push({id:Date.now()+Math.random(),src:e.target.result,name:file.name});
-      loaded++;
-      if(loaded===files.length){renderPictures();debouncedSave(t.id);}
-    };
-    reader.readAsDataURL(file);
+  const files=Array.from(event.target.files).filter(f=>{
+    const ok=['image/jpeg','image/png','image/heic','image/heif'].includes(f.type)||
+              /\.(jpg|jpeg|png|heic|heif)$/i.test(f.name);
+    if(!ok) alert(`${f.name} is not a supported format (JPG, PNG or HEIC only).`);
+    return ok;
   });
+  if(!files.length){event.target.value='';return;}
   event.target.value='';
+
+  // Show upload progress on the section header
+  const btn = document.querySelector('#psec-pictures .sh .btn');
+  const origText = btn?.innerHTML;
+  if(btn) btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-opacity="0.3"/><path d="M21 12a9 9 0 00-9-9"/></svg> Uploading…';
+
+  let uploaded=0;
+  for(const file of files){
+    const path=`${currentUser.id}/${currentTripId}/photos/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const{error}=await sb.storage.from('trip-documents').upload(path,file,{upsert:false});
+    if(error){console.error('Photo upload error:',error); continue;}
+    const{data:urlData}=sb.storage.from('trip-documents').getPublicUrl(path);
+    t.pictures.push({id:Date.now()+Math.random(),src:urlData.publicUrl,name:file.name,path});
+    uploaded++;
+  }
+  if(btn) btn.innerHTML=origText;
+  if(uploaded>0){renderPictures();debouncedSave(t.id);}
 }
-function delPicture(id){const t=currentTrip();if(!t)return;t.pictures=t.pictures.filter(p=>p.id!==id);renderPictures();debouncedSave(t.id);}
-function openLightbox(src){
-  const lb=document.createElement('div');lb.className='pic-lightbox';
-  lb.innerHTML=`<img src="${src}"/><button class="pic-lightbox-close" onclick="this.parentElement.remove()">×</button>`;
-  lb.addEventListener('click',e=>{if(e.target===lb)lb.remove();});
-  document.body.appendChild(lb);
+async function delPicture(id){
+  const t=currentTrip(); if(!t) return;
+  const pic=t.pictures.find(p=>p.id===id);
+  if(pic?.path) await sb.storage.from('trip-documents').remove([pic.path]);
+  t.pictures=t.pictures.filter(p=>p.id!==id);
+  renderPictures(); debouncedSave(t.id);
+}
+function openLightbox(src, idx){
+  const t=currentTrip(); if(!t) return;
+  const pics=t.pictures;
+  let current = idx !== undefined ? idx : pics.findIndex(p=>p.src===src);
+  if(current===-1) current=0;
+
+  function render(i){
+    current=i;
+    const p=pics[i];
+    const lb=document.getElementById('pic-lightbox-el');
+    lb.querySelector('.pic-lb-img').src=p.src;
+    lb.querySelector('.pic-lb-name').textContent=p.name||'';
+    lb.querySelector('.pic-lb-counter').textContent=`${i+1} / ${pics.length}`;
+    lb.querySelector('.pic-lb-prev').style.display=i>0?'':'none';
+    lb.querySelector('.pic-lb-next').style.display=i<pics.length-1?'':'none';
+  }
+
+  let lb=document.getElementById('pic-lightbox-el');
+  if(!lb){
+    lb=document.createElement('div');
+    lb.id='pic-lightbox-el';
+    lb.className='pic-lightbox';
+    lb.style.cssText='flex-direction:column;gap:var(--space-4);';
+    lb.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:900px;padding:0 var(--space-2);">
+        <span class="pic-lb-name" style="font-size:var(--text-xs);color:rgba(255,255,255,0.5);"></span>
+        <div style="display:flex;align-items:center;gap:var(--space-3);">
+          <span class="pic-lb-counter" style="font-size:var(--text-xs);color:rgba(255,255,255,0.4);"></span>
+          <a class="pic-lb-download" href="" download target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:100px;padding:5px 12px;font-size:12px;color:rgba(255,255,255,0.7);text-decoration:none;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Save
+          </a>
+          <button class="pic-lightbox-close" onclick="document.getElementById('pic-lightbox-el').remove()" style="position:static;width:32px;height:32px;">×</button>
+        </div>
+      </div>
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;max-width:900px;width:100%;">
+        <button class="pic-lb-prev" onclick="renderLb(current-1)" style="position:absolute;left:0;z-index:10;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:18px;backdrop-filter:blur(8px);">‹</button>
+        <img class="pic-lb-img" src="" style="max-width:100%;max-height:75vh;object-fit:contain;border-radius:var(--radius-sm);box-shadow:0 40px 80px rgba(0,0,0,0.8);display:block;"/>
+        <button class="pic-lb-next" onclick="renderLb(current+1)" style="position:absolute;right:0;z-index:10;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:18px;backdrop-filter:blur(8px);">›</button>
+      </div>`;
+    lb.addEventListener('click',e=>{if(e.target===lb)lb.remove();});
+    document.body.appendChild(lb);
+    // keyboard navigation
+    lb._keyHandler = e=>{
+      if(e.key==='ArrowLeft'&&current>0) renderLb(current-1);
+      if(e.key==='ArrowRight'&&current<pics.length-1) renderLb(current+1);
+      if(e.key==='Escape') lb.remove();
+    };
+    document.addEventListener('keydown', lb._keyHandler);
+    lb.addEventListener('remove', ()=>document.removeEventListener('keydown', lb._keyHandler));
+  }
+
+  window.renderLb = render;
+  render(current);
+  // Update download link
+  const updateDl = ()=>{
+    const dl=lb.querySelector('.pic-lb-download');
+    if(dl){dl.href=pics[current].src; dl.download=pics[current].name||'photo';}
+  };
+  const origRender=window.renderLb;
+  window.renderLb=(i)=>{origRender(i);updateDl();};
+  window.renderLb(current);
 }
 function renderPictures(){
   const t=currentTrip(); if(!t) return;
   document.getElementById('pictures-grid').innerHTML=t.pictures.map(p=>`
-    <div class="pic-item" onclick="openLightbox('${p.src.replace(/'/g,"\\'")}')">
-      <img src="${p.src}" alt="${esc(p.name)}"/>
+    <div class="pic-item" onclick="openLightbox('${p.src.replace(/'/g,"\\'")}',${"_idx_"})">
+      <img src="${p.src}" alt="${esc(p.name)}" loading="lazy"/>
       <button class="pic-item-del" onclick="event.stopPropagation();delPicture(${p.id})">×</button>
     </div>`).join('');
   const newPicCard=`<div class="trip-card-new pic-item" onclick="document.getElementById('pic-input').click()" style="min-height:200px;"><div class="trip-card-new-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="trip-card-new-label">Add photos</div></div>`;
@@ -2476,6 +2557,7 @@ init();
     <button class="modal-close" onclick="closeModal('modal-expense-detail')">×</button>
     <div class="modal-fields">
       <div class="field"><label>Description</label><input type="text" id="ed-name" placeholder="Train, dinner, museum tickets…" maxlength="100"/></div>
+      <div class="field"><label>Date</label><input type="date" id="ed-date"/></div>
       <div class="field"><label>Amount (€)</label><input type="number" id="ed-amt" placeholder="0.00" min="0" max="999999" step="0.01" oninput="refreshEditSplitFields()"/></div>
       <div class="field"><label>Who paid</label><select id="ed-split"></select></div>
       <div class="field">
