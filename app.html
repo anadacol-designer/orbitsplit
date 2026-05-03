@@ -444,8 +444,8 @@ function gaEvent(name, params){
       <div class="auth-sub">Sign in to access your trips</div>
       <div class="auth-error" id="login-error"></div>
       <div class="auth-fields">
-        <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" autocomplete="email"/></div>
-        <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"/></div>
+        <div class="field"><label>Email</label><input type="email" id="login-email" maxlength="254" placeholder="you@example.com" autocomplete="email"/></div>
+        <div class="field"><label>Password</label><input type="password" id="login-password" maxlength="128" placeholder="••••••••" autocomplete="current-password"/></div>
       </div>
       <button class="btn btn-primary" id="login-btn" onclick="signIn()">Sign in</button>
       <div style="margin-top:var(--space-3);">
@@ -466,7 +466,7 @@ function gaEvent(name, params){
       <div class="auth-error" id="forgot-error"></div>
       <div class="auth-success" id="forgot-success"></div>
       <div class="auth-fields">
-        <div class="field"><label>Email</label><input type="email" id="forgot-email" placeholder="you@example.com" autocomplete="email"/></div>
+        <div class="field"><label>Email</label><input type="email" id="forgot-email" maxlength="254" placeholder="you@example.com" autocomplete="email"/></div>
       </div>
       <button class="btn btn-primary" id="forgot-btn" onclick="sendPasswordReset()">Send reset link</button>
       <div class="auth-divider"><div class="auth-divider-line"></div><div class="auth-divider-text">or</div><div class="auth-divider-line"></div></div>
@@ -480,8 +480,8 @@ function gaEvent(name, params){
       <div class="auth-error" id="new-password-error"></div>
       <div class="auth-success" id="new-password-success"></div>
       <div class="auth-fields">
-        <div class="field"><label>New password</label><input type="password" id="new-password-input" placeholder="Min. 6 characters" autocomplete="new-password"/></div>
-        <div class="field"><label>Confirm password</label><input type="password" id="new-password-confirm" placeholder="Repeat password" autocomplete="new-password"/></div>
+        <div class="field"><label>New password</label><input type="password" id="new-password-input" maxlength="128" placeholder="Min. 6 characters" autocomplete="new-password"/></div>
+        <div class="field"><label>Confirm password</label><input type="password" id="new-password-confirm" maxlength="128" placeholder="Repeat password" autocomplete="new-password"/></div>
       </div>
       <button class="btn btn-primary" id="new-password-btn" onclick="saveNewPassword()">Save new password</button>
     </div>
@@ -493,9 +493,9 @@ function gaEvent(name, params){
       <div class="auth-error" id="signup-error"></div>
       <div class="auth-success" id="signup-success"></div>
       <div class="auth-fields">
-        <div class="field"><label>Email</label><input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email"/></div>
-        <div class="field"><label>Password</label><input type="password" id="signup-password" placeholder="Min. 6 characters" autocomplete="new-password"/></div>
-        <div class="field"><label>Confirm password</label><input type="password" id="signup-confirm" placeholder="Repeat password" autocomplete="new-password"/></div>
+        <div class="field"><label>Email</label><input type="email" id="signup-email" maxlength="254" placeholder="you@example.com" autocomplete="email"/></div>
+        <div class="field"><label>Password</label><input type="password" id="signup-password" maxlength="128" placeholder="Min. 6 characters" autocomplete="new-password"/></div>
+        <div class="field"><label>Confirm password</label><input type="password" id="signup-confirm" maxlength="128" placeholder="Repeat password" autocomplete="new-password"/></div>
       </div>
       <button class="btn btn-primary" id="signup-btn" onclick="signUp()">Create account</button>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:var(--space-3);">
@@ -792,8 +792,8 @@ function gaEvent(name, params){
     <div class="modal-title">Add expense</div>
     <button class="modal-close" onclick="closeModal('modal-add-expense')">×</button>
     <div class="modal-fields">
-      <div class="field"><label>Description</label><input type="text" id="e-name" placeholder="Train, dinner, museum tickets…"/></div>
-      <div class="field"><label>Amount (€)</label><input type="number" id="e-amt" placeholder="0.00" min="0" step="0.01" oninput="refreshSplitFields()"/></div>
+      <div class="field"><label>Description</label><input type="text" id="e-name" placeholder="Train, dinner, museum tickets…" maxlength="100"/></div>
+      <div class="field"><label>Amount (€)</label><input type="number" id="e-amt" placeholder="0.00" min="0" max="999999" step="0.01" oninput="refreshSplitFields()"/></div>
       <div class="field"><label>Who paid</label><select id="e-split"></select></div>
       <div class="field">
         <label>How to split</label>
@@ -836,8 +836,8 @@ function gaEvent(name, params){
     <div class="modal-title">Add document</div>
     <button class="modal-close" onclick="closeModal('modal-add-doc')">×</button>
     <div class="modal-fields">
-      <div class="field"><label>Label</label><input type="text" id="d-name" placeholder="Passport, flight confirmation, insurance…"/></div>
-      <div class="field"><label>Value / reference <span style="color:var(--fg-disabled);font-weight:400;">(optional)</span></label><input type="text" id="d-val" placeholder="Number, code, link…"/></div>
+      <div class="field"><label>Label</label><input type="text" id="d-name" placeholder="Passport, flight confirmation, insurance…" maxlength="80"/></div>
+      <div class="field"><label>Value / reference <span style="color:var(--fg-disabled);font-weight:400;">(optional)</span></label><input type="text" id="d-val" placeholder="Number, code, link…" maxlength="200"/></div>
       <!-- File upload area -->
       <div class="field">
         <label>Attach file <span style="color:var(--fg-disabled);font-weight:400;">(optional)</span></label>
@@ -867,7 +867,7 @@ function gaEvent(name, params){
     <div class="modal-title">Add task</div>
     <button class="modal-close" onclick="closeModal('modal-add-task')">×</button>
     <div class="modal-fields">
-      <div class="field"><label>Task</label><input type="text" id="ck-text" placeholder="Print boarding passes, buy adaptor…" onkeydown="if(event.key==='Enter')addCheck()"/></div>
+      <div class="field"><label>Task</label><input type="text" id="ck-text" placeholder="Print boarding passes, buy adaptor…" maxlength="120" onkeydown="if(event.key==='Enter')addCheck()"/></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-task')">Cancel</button>
@@ -883,8 +883,8 @@ function gaEvent(name, params){
     <button class="modal-close" onclick="closeModal('modal-add-journal')">×</button>
     <div class="modal-fields">
       <div class="field"><label>Date</label><input type="date" id="j-date"/></div>
-      <div class="field"><label>Title</label><input type="text" id="j-title" placeholder="e.g. First morning in Lisbon…"/></div>
-      <div class="field"><label>Write</label><textarea id="j-body" style="min-height:160px;" placeholder="What happened today? What did you see, feel, taste…"></textarea></div>
+      <div class="field"><label>Title</label><input type="text" id="j-title" placeholder="e.g. First morning in Lisbon…" maxlength="100"/></div>
+      <div class="field"><label>Write</label><textarea id="j-body" style="min-height:160px;" maxlength="5000" placeholder="What happened today? What did you see, feel, taste…"></textarea></div>
       <div style="display:flex;justify-content:flex-end;"><span class="journal-char-count" id="j-count">0 words</span></div>
     </div>
     <div class="modal-actions">
@@ -902,7 +902,7 @@ function gaEvent(name, params){
     <div class="modal-fields">
       <div class="field"><label>Trip name</label><input type="text" id="nt-name" placeholder="e.g. Summer in Portugal" maxlength="50"/></div>
       <div class="field"><label>Destination</label><input type="text" id="nt-dest" placeholder="e.g. Lisbon, Porto" maxlength="100"/></div>
-      <div class="field"><label>Who's joining?</label><input type="text" id="nt-travellers" placeholder="e.g. Mom, João, Sara (comma separated)" maxlength="200"/></div>
+      <div class="field"><label>Who else is joining?</label><input type="text" id="nt-travellers" placeholder="e.g. Mom, João, Sara (comma separated)" maxlength="200"/></div>
       <div class="field"><label>Start date</label><input type="date" id="nt-start" oninput="syncEndDate('nt-start','nt-end')"/></div>
       <div class="field"><label>End date</label><input type="date" id="nt-end"/></div>
     </div>
@@ -923,7 +923,7 @@ function gaEvent(name, params){
     <div class="modal-fields">
       <div class="field"><label>Trip name</label><input type="text" id="et-name" maxlength="50"/></div>
       <div class="field"><label>Destination</label><input type="text" id="et-dest" maxlength="100"/></div>
-      <div class="field"><label>Who's joining?</label><input type="text" id="et-travellers" placeholder="e.g. Mom, João, Sara" maxlength="200"/></div>
+      <div class="field"><label>Who else is joining?</label><input type="text" id="et-travellers" placeholder="e.g. Mom, João, Sara" maxlength="200"/></div>
       <div class="field"><label>Start date</label><input type="date" id="et-start" oninput="syncEndDate('et-start','et-end')"/></div>
       <div class="field"><label>End date</label><input type="date" id="et-end"/></div>
     </div>
@@ -952,8 +952,8 @@ function gaEvent(name, params){
       <div class="field"><label>Category</label>
         <select id="p-cat"><option value="hotel">Hotel</option><option value="flight">Flight</option><option value="restaurant">Restaurant</option><option value="activity">Activity</option><option value="transport">Transport</option><option value="other">Other</option></select>
       </div>
-      <div class="field"><label>Address</label><input type="text" id="p-addr" placeholder="Start typing an address…" autocomplete="off"/></div>
-      <div class="field"><label>Booking reference</label><input type="text" id="p-ref" placeholder="e.g. RES-4821, confirmation no."/></div>
+      <div class="field"><label>Address</label><input type="text" id="p-addr" placeholder="Start typing an address…" autocomplete="off" maxlength="200"/></div>
+      <div class="field"><label>Booking reference</label><input type="text" id="p-ref" placeholder="e.g. RES-4821, confirmation no." maxlength="80"/></div>
       <div class="field"><label>Start date</label><input type="date" id="p-start" oninput="syncEndDate('p-start','p-end')"/></div>
       <div class="field"><label>End date</label><input type="date" id="p-end"/></div>
     </div>
@@ -1498,7 +1498,16 @@ async function signOut(){
 }
 
 // ── INIT ──
+
+function setDateLimits(){
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 100);
+  const max = maxDate.toISOString().split('T')[0];
+  document.querySelectorAll('input[type="date"]').forEach(el => el.max = max);
+}
+
 async function init(){
+  setDateLimits();
   const{data:{session}}=await sb.auth.getSession();
   hideEl('loading');
   if(session){
@@ -2219,10 +2228,62 @@ async function delDoc(id){
   renderDocs();
   debouncedSave(t.id);
 }
+
+function openDocViewer(id){
+  const t = currentTrip(); if(!t) return;
+  const d = t.docs.find(x=>x.id===id);
+  if(!d||!d.fileUrl) return;
+  document.getElementById('dv-title').textContent = d.name;
+  document.getElementById('dv-download').href = d.fileUrl;
+  document.getElementById('dv-download').download = d.fileName||d.name;
+  const content = document.getElementById('dv-content');
+  const isImage = d.fileType && d.fileType.startsWith('image/');
+  const isPdf   = d.fileType==='application/pdf' || (d.fileName||'').endsWith('.pdf');
+  if(isImage){
+    content.innerHTML = `<img src="${d.fileUrl}" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--radius-sm);"/>`;
+  } else if(isPdf){
+    content.innerHTML = `<iframe src="${d.fileUrl}" style="width:100%;height:65vh;border:none;border-radius:var(--radius-sm);" title="${esc(d.name)}"></iframe>`;
+  } else {
+    content.innerHTML = `<div style="text-align:center;padding:var(--space-8);">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--fg-tertiary)" stroke-width="1" stroke-linecap="round" style="margin-bottom:var(--space-4);"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div style="font-size:var(--text-sm);color:var(--fg-secondary);margin-bottom:var(--space-4);">${esc(d.fileName||d.name)}</div>
+      <a href="${d.fileUrl}" target="_blank" download class="btn btn-primary btn-inline" style="text-decoration:none;">Download file</a>
+    </div>`;
+  }
+  document.getElementById('modal-doc-viewer').style.display = 'flex';
+}
+
 function renderDocs(){
   const t=currentTrip(); if(!t) return;
-  document.getElementById('docs-list').innerHTML=t.docs.map(d=>`<div class="doc-row glass"><div class="doc-key">${esc(d.name)}</div><div class="doc-val">${esc(d.val)}</div><button class="doc-del" onclick="delDoc(${d.id})">×</button></div>`).join('');
-  const newDocRow=`<div class="trip-card-new" onclick="openAddDoc()" style="min-height:80px;flex-direction:row;justify-content:flex-start;gap:var(--space-3);padding:var(--space-4) var(--space-6);border-radius:var(--radius-sm);margin-top:var(--space-2);"><div class="trip-card-new-icon" style="width:36px;height:36px;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div><div class="trip-card-new-label" style="text-align:left;">Add document</div><div class="trip-card-new-sub" style="text-align:left;">Booking ref, passport, insurance…</div></div></div>`;
+  document.getElementById('docs-list').innerHTML=t.docs.map(d=>{
+    const isImage = d.fileType && d.fileType.startsWith('image/');
+    const isPdf   = d.fileType==='application/pdf' || (d.fileName||'').endsWith('.pdf');
+    const hasFile = !!d.fileUrl;
+
+    const fileIcon = hasFile ? (
+      isImage
+        ? `<div class="doc-file-icon" style="background:var(--blue-lo);width:44px;height:44px;border-radius:var(--radius-xs);overflow:hidden;flex-shrink:0;"><img src="${d.fileUrl}" style="width:100%;height:100%;object-fit:cover;"/></div>`
+        : isPdf
+          ? `<div class="doc-file-icon" style="background:oklch(75% 0.2 18/0.15);flex-shrink:0;width:44px;height:44px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(75% 0.2 18)" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
+          : `<div class="doc-file-icon" style="background:var(--glass-sm);flex-shrink:0;width:44px;height:44px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-tertiary)" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
+    ) : '';
+
+    const openBtn = hasFile
+      ? `<button onclick="event.stopPropagation();openDocViewer(${d.id})" style="background:rgba(255,255,255,0.07);border:1px solid var(--glass-border);border-radius:var(--radius-full);padding:6px 14px;font-size:var(--text-xs);font-weight:500;color:var(--fg-secondary);cursor:pointer;white-space:nowrap;flex-shrink:0;">View</button>`
+      : '';
+
+    return `<div class="doc-row glass" style="cursor:default;">
+      ${fileIcon}
+      <div style="flex:1;min-width:0;">
+        <div class="doc-key">${esc(d.name)}</div>
+        ${d.val ? `<div class="doc-val">${esc(d.val)}</div>` : ''}
+        ${d.fileName ? `<div style="font-size:11px;color:var(--fg-disabled);margin-top:2px;">${esc(d.fileName)}</div>` : ''}
+      </div>
+      ${openBtn}
+      <button class="doc-del" onclick="delDoc(${d.id})">×</button>
+    </div>`;
+  }).join('');
+  const newDocRow=`<div class="trip-card-new" onclick="openAddDoc()" style="min-height:80px;flex-direction:row;justify-content:flex-start;gap:var(--space-3);padding:var(--space-4) var(--space-6);border-radius:var(--radius-sm);margin-top:var(--space-2);"><div class="trip-card-new-icon" style="width:36px;height:36px;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div><div class="trip-card-new-label" style="text-align:left;">Add document</div><div class="trip-card-new-sub" style="text-align:left;">Booking ref, passport, insurance, photos…</div></div></div>`;
   document.getElementById('docs-list').innerHTML+=newDocRow;
   document.getElementById('docs-empty').style.display='none';
   document.getElementById('c-docs').textContent=t.docs.length+' saved';
@@ -2409,8 +2470,8 @@ init();
     <div class="modal-title">Edit expense</div>
     <button class="modal-close" onclick="closeModal('modal-expense-detail')">×</button>
     <div class="modal-fields">
-      <div class="field"><label>Description</label><input type="text" id="ed-name" placeholder="Train, dinner, museum tickets…"/></div>
-      <div class="field"><label>Amount (€)</label><input type="number" id="ed-amt" placeholder="0.00" min="0" step="0.01" oninput="refreshEditSplitFields()"/></div>
+      <div class="field"><label>Description</label><input type="text" id="ed-name" placeholder="Train, dinner, museum tickets…" maxlength="100"/></div>
+      <div class="field"><label>Amount (€)</label><input type="number" id="ed-amt" placeholder="0.00" min="0" max="999999" step="0.01" oninput="refreshEditSplitFields()"/></div>
       <div class="field"><label>Who paid</label><select id="ed-split"></select></div>
       <div class="field">
         <label>How to split</label>
@@ -2444,6 +2505,24 @@ init();
       <button class="btn btn-danger" onclick="deleteCurrentExpense()">Delete</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-expense-detail')">Cancel</button>
       <button class="btn btn-primary btn-inline" id="ed-save-btn" onclick="saveEditExpense()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOC VIEWER MODAL -->
+<div class="modal-overlay" id="modal-doc-viewer" style="display:none;align-items:center;justify-content:center;padding:var(--space-4);" onclick="if(event.target===this)closeModal('modal-doc-viewer')">
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);max-width:700px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,0.7);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-6);border-bottom:1px solid var(--glass-border);">
+      <div id="dv-title" style="font-family:var(--font-display);font-size:var(--text-lg);"></div>
+      <div style="display:flex;gap:var(--space-2);">
+        <a id="dv-download" href="" target="_blank" download style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid var(--glass-border);border-radius:var(--radius-full);padding:7px 16px;font-size:var(--text-xs);font-weight:500;color:var(--fg-secondary);cursor:pointer;text-decoration:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </a>
+        <button onclick="closeModal('modal-doc-viewer')" style="background:rgba(255,255,255,0.07);border:1px solid var(--glass-border);border-radius:var(--radius-full);width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg-secondary);font-size:18px;">×</button>
+      </div>
+    </div>
+    <div id="dv-content" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:var(--space-4);min-height:300px;">
     </div>
   </div>
 </div>
