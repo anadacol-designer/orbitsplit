@@ -955,7 +955,7 @@ function gaEvent(name, params){
       </div>
     </div>
     <!-- Members section -->
-    <div id="et-members-section" style="border-top:1px solid var(--glass-border);padding-top:var(--space-6);margin-top:var(--space-4);">
+    <div id="et-members-section" style="border-top:1px solid var(--glass-border);padding-top:var(--space-5);margin-top:var(--space-3);">
       <div style="font-size:var(--text-2xs);font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:var(--space-4);">Trip members</div>
       <div id="et-members-list" style="display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-5);min-height:32px;"></div>
       <div class="field" style="margin-bottom:0;">
@@ -967,7 +967,7 @@ function gaEvent(name, params){
             Send invite
           </button>
         </div>
-        <div id="et-invite-msg" style="font-size:var(--text-xs);margin-top:var(--space-2);display:none;"></div>
+        <div id="et-invite-msg" style="font-size:var(--text-xs);margin-top:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-xs);background:var(--glass-xs);word-break:break-word;display:none;"></div>
       </div>
     </div>
     <div class="modal-actions">
@@ -1637,12 +1637,14 @@ async function loadTripMembers(tripId){
   // Pending invites
   (invites||[]).forEach(inv=>{
     const link=`${window.location.origin}/app.html?invite=${inv.token}`;
-    html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-3);background:var(--glass-xs);border-radius:var(--radius-xs);opacity:0.7;">
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-3);background:var(--glass-xs);border-radius:var(--radius-xs);">
       <div style="min-width:0;">
-        <div style="font-size:var(--text-xs);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(inv.invited_email)}</div>
-        <div style="font-size:11px;color:var(--fg-tertiary);">invite pending</div>
+        <div style="font-size:var(--text-xs);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg-secondary);">${esc(inv.invited_email)}</div>
+        <div style="font-size:11px;color:var(--fg-disabled);">invite pending</div>
       </div>
-      <button onclick="navigator.clipboard.writeText('${link}').then(()=>showToast('Link copied!'))" style="background:none;border:1px solid var(--glass-border);border-radius:100px;padding:3px 10px;font-size:11px;color:var(--fg-secondary);cursor:pointer;flex-shrink:0;">Copy link</button>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button onclick="navigator.clipboard.writeText('${link}').then(()=>showToast('Link copied!'))" style="background:none;border:1px solid var(--glass-border);border-radius:100px;padding:3px 10px;font-size:11px;color:var(--fg-secondary);cursor:pointer;">Copy</button>
+      </div>
     </div>`;
   });
 
@@ -1681,13 +1683,34 @@ async function inviteMember(){
   }
 
   document.getElementById('et-invite-email').value='';
-  msg.style.color='var(--mint)';
-  msg.textContent='✓ Invite link created! Share this with '+email+':';
+  msg.style.color='var(--fg-tertiary)';
+  msg.textContent='Sending invite email…';
 
-  // Show the invite link
-  const inviteLink = `${window.location.origin}/app.html?invite=${invite.token}`;
-  msg.innerHTML += `<br/><a href="${inviteLink}" style="color:var(--blue-hi);font-size:11px;word-break:break-all;">${inviteLink}</a>
-    <button onclick="navigator.clipboard.writeText('${inviteLink}').then(()=>this.textContent='Copied!')" style="background:var(--glass-sm);border:1px solid var(--glass-border);border-radius:100px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--fg-secondary);margin-left:6px;">Copy link</button>`;
+  // Send email via Edge Function
+  const inviteUrl=`${window.location.origin}/app.html?invite=${invite.token}`;
+  const meta=currentUser?.user_metadata||{};
+  const inviterName=meta.display_name||meta.full_name||meta.name||currentUser?.email||'Someone';
+  try{
+    const res=await fetch('https://zwnxjdzvoatblkinzugs.supabase.co/functions/v1/send-invite',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${(await sb.auth.getSession()).data.session?.access_token||''}`
+      },
+      body:JSON.stringify({invitedEmail:email, inviterName, tripName:t.name, inviteUrl})
+    });
+    const data=await res.json();
+    if(data.success){
+      msg.style.color='var(--mint)';
+      msg.textContent=`✓ Invite sent to ${email}`;
+    } else {
+      throw new Error(data.error||'Unknown error');
+    }
+  }catch(e){
+    msg.style.color='var(--rose)';
+    msg.innerHTML=`Could not send email. <a href="${inviteUrl}" style="color:var(--blue-hi);" onclick="navigator.clipboard.writeText('${inviteUrl}');this.textContent='Copied!';return false;">Copy link instead</a>`;
+  }
+  loadTripMembers(editingTripId);
 }
 
 async function removeMember(tripId, userId){
@@ -1964,18 +1987,30 @@ async function sendTripInvites(tripId, emails){
 
 async function notifyInvites(tripName, invites){
   if(!invites.length) return;
-  // Show a summary with copyable links
-  const links = invites.map(i=>{
-    const url=`${window.location.origin}/app.html?invite=${i.token}`;
-    return `${i.email}: ${url}`;
-  }).join('\n');
-  const msg = `Invites created for ${invites.length} person(s).\n\nShare these links:\n\n${links}`;
-  // Copy all links to clipboard
-  navigator.clipboard.writeText(links).then(()=>{
-    showToast(`${invites.length} invite link(s) copied to clipboard!`);
-  }).catch(()=>{
-    alert(msg);
-  });
+  const meta = currentUser?.user_metadata||{};
+  const inviterName = meta.display_name||meta.full_name||meta.name||currentUser?.email||'Someone';
+  let sent=0, failed=0;
+  for(const inv of invites){
+    const inviteUrl=`${window.location.origin}/app.html?invite=${inv.token}`;
+    try{
+      const res=await fetch('https://zwnxjdzvoatblkinzugs.supabase.co/functions/v1/send-invite',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':`Bearer ${(await sb.auth.getSession()).data.session?.access_token||''}`
+        },
+        body:JSON.stringify({invitedEmail:inv.email, inviterName, tripName, inviteUrl})
+      });
+      const data=await res.json();
+      if(data.success) sent++;
+      else{ console.error('send-invite error:',data); failed++; }
+    }catch(e){
+      console.error('send-invite fetch error:',e);
+      failed++;
+    }
+  }
+  if(sent) showToast(`Invite email${sent>1?'s':''} sent to ${sent} person${sent>1?'s':''}! 🎉`);
+  if(failed) showToast(`${failed} invite(s) could not be sent — check console.`);
 }
 
 function showToast(msg){
