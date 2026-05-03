@@ -923,7 +923,7 @@ function gaEvent(name, params){
     <div class="modal-fields">
       <div class="field"><label>Trip name</label><input type="text" id="nt-name" placeholder="e.g. Summer in Portugal" maxlength="50"/></div>
       <div class="field"><label>Destination</label><input type="text" id="nt-dest" placeholder="e.g. Lisbon, Porto" maxlength="100"/></div>
-      <div class="field"><label>Who else is joining?</label><input type="text" id="nt-travellers" placeholder="e.g. Mom, João, Sara (comma separated)" maxlength="200"/></div>
+      <div class="field"><label>Who else is joining? <span style="color:var(--fg-disabled);font-weight:400;">(email addresses)</span></label><input type="text" id="nt-travellers" placeholder="email1@example.com, email2@example.com" maxlength="500" type="text"/></div>
       <div class="field"><label>Start date</label><input type="date" id="nt-start" oninput="syncEndDate('nt-start','nt-end')"/></div>
       <div class="field"><label>End date</label><input type="date" id="nt-end"/></div>
     </div>
@@ -944,7 +944,7 @@ function gaEvent(name, params){
     <div class="modal-fields">
       <div class="field"><label>Trip name</label><input type="text" id="et-name" maxlength="50"/></div>
       <div class="field"><label>Destination</label><input type="text" id="et-dest" maxlength="100"/></div>
-      <div class="field"><label>Who else is joining?</label><input type="text" id="et-travellers" placeholder="e.g. Mom, João, Sara" maxlength="200"/></div>
+      <div class="field"><label>Who else is joining? <span style="color:var(--fg-disabled);font-weight:400;">(email addresses)</span></label><input type="text" id="et-travellers" placeholder="email1@example.com, email2@example.com" maxlength="500" type="text"/></div>
       <div class="field"><label>Start date</label><input type="date" id="et-start" oninput="syncEndDate('et-start','et-end')"/></div>
       <div class="field"><label>End date</label><input type="date" id="et-end"/></div>
     </div>
@@ -1900,13 +1900,70 @@ function openNewTrip(){showEl('modal-new');setTimeout(()=>document.getElementByI
 function closeNewTrip(){hideEl('modal-new');['nt-name','nt-dest','nt-travellers','nt-start','nt-end'].forEach(id=>document.getElementById(id).value='');}
 document.getElementById('modal-new').addEventListener('click',function(e){if(e.target===this)closeNewTrip();});
 
+
+async function sendTripInvites(tripId, emails){
+  const results = [];
+  for(const email of emails){
+    if(!email.includes('@')) continue; // skip non-emails silently
+    // Check if already a member
+    const{data:existing}=await sb.from('trip_members')
+      .select('id').eq('trip_id',tripId)
+      .eq('user_id', (await sb.from('trip_invites').select('invited_email').eq('trip_id',tripId).eq('invited_email',email).single())?.data?.invited_email||'__none__')
+      .single();
+    // Check if already invited
+    const{data:alreadyInvited}=await sb.from('trip_invites')
+      .select('id').eq('trip_id',tripId).eq('invited_email',email).eq('accepted',false).single();
+    if(alreadyInvited) continue;
+    const token=crypto.randomUUID();
+    const{error}=await sb.from('trip_invites').insert({
+      trip_id:tripId, invited_by:currentUser.id, invited_email:email, token, accepted:false
+    });
+    if(!error){
+      results.push({email, token});
+    }
+  }
+  return results;
+}
+
+async function notifyInvites(tripName, invites){
+  if(!invites.length) return;
+  // Show a summary with copyable links
+  const links = invites.map(i=>{
+    const url=`${window.location.origin}/app.html?invite=${i.token}`;
+    return `${i.email}: ${url}`;
+  }).join('\n');
+  const msg = `Invites created for ${invites.length} person(s).\n\nShare these links:\n\n${links}`;
+  // Copy all links to clipboard
+  navigator.clipboard.writeText(links).then(()=>{
+    showToast(`${invites.length} invite link(s) copied to clipboard!`);
+  }).catch(()=>{
+    alert(msg);
+  });
+}
+
+function showToast(msg){
+  let toast=document.getElementById('app-toast');
+  if(!toast){
+    toast=document.createElement('div');
+    toast.id='app-toast';
+    toast.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--glass-border);border-radius:100px;padding:10px 20px;font-size:var(--text-xs);font-weight:500;color:var(--fg-primary);z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:opacity 300ms;white-space:nowrap;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent=msg;
+  toast.style.opacity='1';
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>toast.style.opacity='0', 3000);
+}
+
 async function createTrip(){
   const name=document.getElementById('nt-name').value.trim();
   if(!name){document.getElementById('nt-name').focus();return;}
   const btn=document.getElementById('create-trip-btn');
   btn.disabled=true;
   const rawT = document.getElementById('nt-travellers').value;
-  const travellers = rawT ? rawT.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const emails = rawT ? rawT.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  // Store display names (use email prefix before @, or full value if not an email)
+  const travellers = emails.map(e=>e.includes('@')?e.split('@')[0]:e);
   const trip={
     id:crypto.randomUUID(), name,
     destination:document.getElementById('nt-dest').value.trim(),
@@ -1924,6 +1981,11 @@ async function createTrip(){
     trip_id:trip.id, user_id:currentUser.id, role:'owner'
   });
   gaEvent('create_trip');
+  // Send invites for email addresses
+  if(emails.length){
+    const invites=await sendTripInvites(trip.id, emails.filter(e=>e.includes('@')));
+    if(invites.length) await notifyInvites(trip.name, invites);
+  }
   openTrip(trip.id);
 }
 
@@ -1952,9 +2014,16 @@ async function saveEditTrip(){
   t.startDate=document.getElementById('et-start').value;
   t.endDate=document.getElementById('et-end').value;
   const rawET = document.getElementById('et-travellers').value;
-  t.travellers = rawET ? rawET.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const newEmails = rawET ? rawET.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  t.travellers = newEmails.map(e=>e.includes('@')?e.split('@')[0]:e);
   closeEditTrip();
   await saveTrip(t.id);
+  // Send invites for new email addresses
+  const emailsToInvite = newEmails.filter(e=>e.includes('@'));
+  if(emailsToInvite.length){
+    const invites=await sendTripInvites(t.id, emailsToInvite);
+    if(invites.length) await notifyInvites(t.name, invites);
+  }
   if(currentTripId===t.id) renderPlanner();
   renderDashboard();
 }
