@@ -633,7 +633,7 @@ function gaEvent(name, params){
       </div>
       <!-- Right: stats + edit button aligned to top -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-4);">
-        <button class="back-btn" onclick="openEditTrip(currentTripId)">
+        <button class="back-btn" id="edit-trip-btn" onclick="openEditTrip(currentTripId)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit trip
         </button>
         <div style="display:flex;gap:var(--space-8);">
@@ -954,18 +954,21 @@ function gaEvent(name, params){
         <button class="btn btn-ghost" onclick="document.getElementById('edit-delete-confirm').style.display='none'" style="flex:1;">Cancel</button>
       </div>
     </div>
-    <!-- Members section (owners only) -->
-    <div id="et-members-section" style="border-top:1px solid var(--glass-border);padding-top:var(--space-5);margin-top:var(--space-2);">
-      <div style="font-size:var(--text-2xs);font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:var(--space-3);">Trip members</div>
-      <div id="et-members-list" style="display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-4);"></div>
-      <div style="display:flex;gap:var(--space-2);">
-        <input type="email" id="et-invite-email" placeholder="Invite by email…" style="flex:1;" maxlength="254"/>
-        <button class="btn btn-ghost btn-inline" onclick="inviteMember()" style="white-space:nowrap;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Invite
-        </button>
+    <!-- Members section -->
+    <div id="et-members-section" style="border-top:1px solid var(--glass-border);padding-top:var(--space-6);margin-top:var(--space-4);">
+      <div style="font-size:var(--text-2xs);font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:var(--space-4);">Trip members</div>
+      <div id="et-members-list" style="display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-5);min-height:32px;"></div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Invite someone</label>
+        <div style="display:flex;gap:var(--space-2);">
+          <input type="email" id="et-invite-email" placeholder="email@example.com" style="flex:1;" maxlength="254"/>
+          <button class="btn btn-primary btn-inline" onclick="inviteMember()" style="white-space:nowrap;flex-shrink:0;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Send invite
+          </button>
+        </div>
+        <div id="et-invite-msg" style="font-size:var(--text-xs);margin-top:var(--space-2);display:none;"></div>
       </div>
-      <div id="et-invite-msg" style="font-size:var(--text-xs);margin-top:var(--space-2);display:none;"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-danger" onclick="document.getElementById('edit-delete-confirm').style.display='block'">Delete</button>
@@ -1594,6 +1597,7 @@ async function showApp(){
   renderSkeletons(3);
   await Promise.all([migrateExistingTrips(), checkPendingInvite()]);
   await loadTrips();
+  if(window._pendingOpenTripId){ const pid=window._pendingOpenTripId; window._pendingOpenTripId=null; await openTrip(pid); return; }
   renderDashboard();
 }
 
@@ -1707,15 +1711,10 @@ async function checkPendingInvite(){
   });
 
   if(!me){
-    // Mark invite as accepted
     await sb.from('trip_invites').update({accepted:true}).eq('token',token);
-    // Clean up URL
     window.history.replaceState({}, '', '/app.html');
-    // Reload trips to show the new shared trip
-    await loadTrips();
-    renderDashboard();
-    // Open the trip directly
-    if(invite.trip_id) openTrip(invite.trip_id);
+    // Store trip_id to open after loadTrips completes
+    window._pendingOpenTripId = invite.trip_id;
   }
 }
 
@@ -2011,7 +2010,7 @@ function openEditTrip(id){
   if(!id) return;
   const t=tripById(id);
   if(!t) return;
-  if(!t.isOwner){alert('Only the trip owner can edit this trip.');return;}
+  if(!t.isOwner) return; // non-owners can't edit
   editingTripId=id;
   document.getElementById('et-name').value=t.name;
   document.getElementById('et-dest').value=t.destination||'';
@@ -2090,6 +2089,7 @@ document.addEventListener('click',()=>closeCtx());
 function renderPlanner(){
   const t=currentTrip(); if(!t) return;
   document.getElementById('pl-eyebrow').textContent=t.destination||'Trip';
+  const editBtn=document.getElementById('edit-trip-btn'); if(editBtn) editBtn.style.display=t.isOwner?'':'none';
   const words=t.name.split(' ');
   const last=words.pop();
   document.getElementById('pl-title').innerHTML=`${words.join(' ')} <span>${last}</span>`;
