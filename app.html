@@ -359,6 +359,20 @@ select option{background:var(--color-surface);color:var(--fg-primary);}
   input,select,textarea{font-size:16px!important;}
 }
 
+
+/* Expense timeline */
+.exp-timeline-date{font-size:var(--text-2xs);font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);padding:var(--space-4) 0 var(--space-2);border-top:1px solid var(--glass-border);margin-top:var(--space-2);}
+.exp-trow{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);cursor:pointer;transition:background var(--dur-fast);margin-bottom:2px;}
+.exp-trow:hover{background:var(--glass-sm);}
+.exp-ticon{width:38px;height:38px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.exp-tinfo{flex:1;min-width:0;}
+.exp-tname{font-size:var(--text-sm);font-weight:500;color:var(--fg-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.exp-tsub{font-size:var(--text-2xs);color:var(--fg-tertiary);margin-top:2px;}
+.exp-tright{text-align:right;flex-shrink:0;min-width:80px;}
+.exp-tbal{font-size:11px;font-weight:500;color:var(--fg-tertiary);margin-bottom:1px;}
+.exp-tbal.lent{color:var(--mint);}
+.exp-tbal.borrowed{color:var(--rose);}
+.exp-tamt{font-family:var(--font-mono);font-size:var(--text-sm);font-weight:600;color:var(--fg-primary);}
 </style>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBuHbx6UUs5I7XTjRE3MoMnDOZv6ioTF_k&libraries=places&callback=initMaps" async defer></script>
 <!-- Google tag (gtag.js) -->
