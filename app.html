@@ -638,8 +638,8 @@ function gaEvent(name, params){
         </button>
         <div style="display:flex;gap:var(--space-8);">
           <div><div class="stat-val" id="pl-places">0</div><div class="stat-label">Places</div></div>
-          <div><div class="stat-val" id="pl-spend">€0</div><div class="stat-label">Spend</div></div>
-          <div id="pl-balance-wrap" style="display:none;"><div class="stat-val" id="pl-balance" style="font-size:var(--text-lg);">€0</div><div class="stat-label" id="pl-balance-label">You lent</div></div>
+          <div id="pl-spend-wrap"><div class="stat-val" id="pl-spend">€0</div><div class="stat-label">Spend</div></div>
+          <div id="pl-balance-wrap" style="display:none;"><div class="stat-val" id="pl-balance">€0</div><div class="stat-label" id="pl-balance-label">You lent</div></div>
         </div>
       </div>
     </div>
@@ -2158,35 +2158,52 @@ function expCategoryIcon(name, method){
 function updatePlannerBalance(){
   const t=currentTrip(); if(!t) return;
   const me=getMe();
-  const travellers=t.travellers&&t.travellers.length?t.travellers:[];
-  if(!travellers.length){
-    document.getElementById('pl-balance-wrap').style.display='none';
+  const isShared=t.travellers&&t.travellers.length>0;
+  const spendWrap=document.getElementById('pl-spend-wrap');
+  const balWrap=document.getElementById('pl-balance-wrap');
+  const val=document.getElementById('pl-balance');
+  const lbl=document.getElementById('pl-balance-label');
+
+  if(!isShared){
+    // Solo trip: show total spend, hide balance
+    spendWrap.style.display='';
+    balWrap.style.display='none';
     return;
   }
+
+  // Shared trip: hide spend, show lent/borrowed
+  spendWrap.style.display='none';
   let totalLent=0, totalBorrowed=0;
   t.expenses.forEach(e=>{
     const{payer,shares}=parseSplit(e.split,e.amount,e.method,e.customShares);
     const myShare=shares[me]||0;
     const iPaid=payer===me;
     const othersShare=e.amount-myShare;
-    if(iPaid && othersShare>0.01) totalLent+=othersShare;
-    else if(!iPaid && myShare>0.01) totalBorrowed+=myShare;
+    if(iPaid&&othersShare>0.01) totalLent+=othersShare;
+    else if(!iPaid&&myShare>0.01) totalBorrowed+=myShare;
   });
-  const wrap=document.getElementById('pl-balance-wrap');
-  const val=document.getElementById('pl-balance');
-  const lbl=document.getElementById('pl-balance-label');
   const net=totalLent-totalBorrowed;
   if(Math.abs(net)<0.01){
-    wrap.style.display='none';
+    // All settled — show a neutral "settled" indicator
+    balWrap.style.display='';
+    val.textContent='Settled';
+    val.style.color='var(--fg-tertiary)';
+    val.style.fontFamily='var(--font-ui)';
+    val.style.fontSize='var(--text-sm)';
+    lbl.textContent='Balance';
   } else if(net>0){
-    wrap.style.display='';
+    balWrap.style.display='';
     val.textContent='€'+net.toFixed(0);
     val.style.color='var(--mint)';
+    val.style.fontFamily='';
+    val.style.fontSize='';
     lbl.textContent='You lent';
   } else {
-    wrap.style.display='';
+    balWrap.style.display='';
     val.textContent='€'+Math.abs(net).toFixed(0);
     val.style.color='var(--rose)';
+    val.style.fontFamily='';
+    val.style.fontSize='';
     lbl.textContent='You borrowed';
   }
 }
