@@ -2388,73 +2388,78 @@ async function delPicture(id){
   t.pictures=t.pictures.filter(p=>p.id!==id);
   renderPictures(); debouncedSave(t.id);
 }
-function openLightbox(src, idx){
-  const t=currentTrip(); if(!t) return;
-  const pics=t.pictures;
-  let current = idx !== undefined ? idx : pics.findIndex(p=>p.src===src);
-  if(current===-1) current=0;
+function openLightbox(startIdx){
+  const t = currentTrip(); if(!t) return;
+  const pics = t.pictures;
+  if(!pics.length) return;
 
-  function render(i){
-    current=i;
-    const p=pics[i];
-    const lb=document.getElementById('pic-lightbox-el');
-    lb.querySelector('.pic-lb-img').src=p.src;
-    lb.querySelector('.pic-lb-name').textContent=p.name||'';
-    lb.querySelector('.pic-lb-counter').textContent=`${i+1} / ${pics.length}`;
-    lb.querySelector('.pic-lb-prev').style.display=i>0?'':'none';
-    lb.querySelector('.pic-lb-next').style.display=i<pics.length-1?'':'none';
-  }
+  // Remove any existing lightbox
+  const existing = document.getElementById('pic-lightbox-el');
+  if(existing) existing.remove();
 
-  let lb=document.getElementById('pic-lightbox-el');
-  if(!lb){
-    lb=document.createElement('div');
-    lb.id='pic-lightbox-el';
-    lb.className='pic-lightbox';
-    lb.style.cssText='flex-direction:column;gap:var(--space-4);';
-    lb.innerHTML=`
-      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:900px;padding:0 var(--space-2);">
-        <span class="pic-lb-name" style="font-size:var(--text-xs);color:rgba(255,255,255,0.5);"></span>
-        <div style="display:flex;align-items:center;gap:var(--space-3);">
-          <span class="pic-lb-counter" style="font-size:var(--text-xs);color:rgba(255,255,255,0.4);"></span>
-          <a class="pic-lb-download" href="" download target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:100px;padding:5px 12px;font-size:12px;color:rgba(255,255,255,0.7);text-decoration:none;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Save
-          </a>
-          <button class="pic-lightbox-close" onclick="document.getElementById('pic-lightbox-el').remove()" style="position:static;width:32px;height:32px;">×</button>
-        </div>
+  let cur = startIdx || 0;
+
+  const lb = document.createElement('div');
+  lb.id = 'pic-lightbox-el';
+  lb.className = 'pic-lightbox';
+  lb.style.cssText = 'flex-direction:column;gap:16px;';
+  lb.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:960px;">
+      <span id="lb-name" style="font-size:13px;color:rgba(255,255,255,0.45);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;"></span>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <span id="lb-counter" style="font-size:12px;color:rgba(255,255,255,0.35);"></span>
+        <a id="lb-dl" href="" download target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.09);border:1px solid rgba(255,255,255,0.14);border-radius:100px;padding:5px 14px;font-size:12px;color:rgba(255,255,255,0.65);text-decoration:none;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save
+        </a>
+        <button onclick="document.getElementById('pic-lightbox-el').remove()" style="background:rgba(255,255,255,0.09);border:1px solid rgba(255,255,255,0.14);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:18px;">×</button>
       </div>
-      <div style="position:relative;display:flex;align-items:center;justify-content:center;max-width:900px;width:100%;">
-        <button class="pic-lb-prev" onclick="renderLb(current-1)" style="position:absolute;left:0;z-index:10;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:18px;backdrop-filter:blur(8px);">‹</button>
-        <img class="pic-lb-img" src="" style="max-width:100%;max-height:75vh;object-fit:contain;border-radius:var(--radius-sm);box-shadow:0 40px 80px rgba(0,0,0,0.8);display:block;"/>
-        <button class="pic-lb-next" onclick="renderLb(current+1)" style="position:absolute;right:0;z-index:10;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:18px;backdrop-filter:blur(8px);">›</button>
-      </div>`;
-    lb.addEventListener('click',e=>{if(e.target===lb)lb.remove();});
-    document.body.appendChild(lb);
-    // keyboard navigation
-    lb._keyHandler = e=>{
-      if(e.key==='ArrowLeft'&&current>0) renderLb(current-1);
-      if(e.key==='ArrowRight'&&current<pics.length-1) renderLb(current+1);
-      if(e.key==='Escape') lb.remove();
-    };
-    document.addEventListener('keydown', lb._keyHandler);
-    lb.addEventListener('remove', ()=>document.removeEventListener('keydown', lb._keyHandler));
+    </div>
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;max-width:960px;">
+      <button id="lb-prev" style="position:absolute;left:-8px;z-index:10;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:22px;backdrop-filter:blur(8px);">‹</button>
+      <img id="lb-img" src="" style="max-width:100%;max-height:76vh;object-fit:contain;border-radius:10px;box-shadow:0 40px 80px rgba(0,0,0,0.8);display:block;"/>
+      <button id="lb-next" style="position:absolute;right:-8px;z-index:10;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:22px;backdrop-filter:blur(8px);">›</button>
+    </div>`;
+
+  document.body.appendChild(lb);
+
+  function go(i){
+    cur = Math.max(0, Math.min(pics.length-1, i));
+    const p = pics[cur];
+    lb.querySelector('#lb-img').src = p.src;
+    lb.querySelector('#lb-name').textContent = p.name || '';
+    lb.querySelector('#lb-counter').textContent = pics.length > 1 ? `${cur+1} / ${pics.length}` : '';
+    lb.querySelector('#lb-dl').href = p.src;
+    lb.querySelector('#lb-dl').download = p.name || 'photo';
+    lb.querySelector('#lb-prev').style.display = cur > 0 ? 'flex' : 'none';
+    lb.querySelector('#lb-next').style.display = cur < pics.length-1 ? 'flex' : 'none';
   }
 
-  window.renderLb = render;
-  render(current);
-  // Update download link
-  const updateDl = ()=>{
-    const dl=lb.querySelector('.pic-lb-download');
-    if(dl){dl.href=pics[current].src; dl.download=pics[current].name||'photo';}
+  lb.querySelector('#lb-prev').onclick = () => go(cur - 1);
+  lb.querySelector('#lb-next').onclick = () => go(cur + 1);
+  lb.addEventListener('click', e => { if(e.target === lb) lb.remove(); });
+
+  const keyHandler = e => {
+    if(e.key === 'ArrowLeft')  go(cur - 1);
+    if(e.key === 'ArrowRight') go(cur + 1);
+    if(e.key === 'Escape')     lb.remove();
   };
-  const origRender=window.renderLb;
-  window.renderLb=(i)=>{origRender(i);updateDl();};
-  window.renderLb(current);
+  document.addEventListener('keydown', keyHandler);
+  lb.addEventListener('remove', () => document.removeEventListener('keydown', keyHandler));
+
+  // Swipe support on mobile
+  let touchStartX = 0;
+  lb.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX, {passive:true});
+  lb.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if(Math.abs(diff) > 50) go(diff > 0 ? cur + 1 : cur - 1);
+  });
+
+  go(cur);
 }
 function renderPictures(){
   const t=currentTrip(); if(!t) return;
-  document.getElementById('pictures-grid').innerHTML=t.pictures.map(p=>`
-    <div class="pic-item" onclick="openLightbox('${p.src.replace(/'/g,"\\'")}',${"_idx_"})">
+  document.getElementById('pictures-grid').innerHTML=t.pictures.map((p,i)=>`
+    <div class="pic-item" onclick="openLightbox(${i})">
       <img src="${p.src}" alt="${esc(p.name)}" loading="lazy"/>
       <button class="pic-item-del" onclick="event.stopPropagation();delPicture(${p.id})">×</button>
     </div>`).join('');
