@@ -962,7 +962,7 @@ function gaEvent(name, params){
         <label>Invite someone</label>
         <div style="display:flex;gap:var(--space-2);">
           <input type="email" id="et-invite-email" placeholder="email@example.com" style="flex:1;" maxlength="254"/>
-          <button class="btn btn-primary btn-inline" onclick="inviteMember()" style="white-space:nowrap;flex-shrink:0;">
+          <button class="btn btn-ghost btn-inline" onclick="inviteMember()" style="white-space:nowrap;flex-shrink:0;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Send invite
           </button>
@@ -1481,8 +1481,8 @@ async function signIn(){
   const btn=document.getElementById('login-btn');
   errEl.style.display='none';
   btn.disabled=true; btn.textContent='Signing in…';
-  const{error}=gaEvent('login', {method:'email'});
-  await sb.auth.signInWithPassword({email,password});
+  gaEvent('login', {method:'email'});
+  const{error}=await sb.auth.signInWithPassword({email,password});
   btn.disabled=false; btn.textContent='Sign in';
   if(error){errEl.textContent=error.message;errEl.style.display='block';}
 }
@@ -1498,8 +1498,8 @@ async function signUp(){
   if(password!==confirm){errEl.textContent='Passwords do not match.';errEl.style.display='block';return;}
   if(password.length<6){errEl.textContent='Password must be at least 6 characters.';errEl.style.display='block';return;}
   btn.disabled=true; btn.textContent='Creating account…';
-  const{error}=gaEvent('sign_up', {method:'email'});
-  await sb.auth.signUp({email,password});
+  gaEvent('sign_up', {method:'email'});
+  const{data,error}=await sb.auth.signUp({email,password});
   btn.disabled=false; btn.textContent='Create account';
   if(error){errEl.textContent=error.message;errEl.style.display='block';}
   else{sucEl.textContent='Account created! Check your email to confirm, then sign in.';sucEl.style.display='block';}
@@ -1752,10 +1752,21 @@ async function checkPendingInvite(){
   console.log('trip_members insert error:', me);
 
   if(!me){
-    const{error:upErr}=await sb.from('trip_invites').update({accepted:true}).eq('token',token);
-    console.log('invite accept error:', upErr);
+    await sb.from('trip_invites').update({accepted:true}).eq('token',token);
+    // Add the new member to the trip's travellers list
+    const meta = currentUser.user_metadata||{};
+    const memberName = meta.display_name||meta.full_name||meta.name||currentUser.email?.split('@')[0]||'Member';
+    const{data:tripData}=await sb.from('trips').select('travellers').eq('id',invite.trip_id).single();
+    if(tripData){
+      const travellers=[...(tripData.travellers||[])];
+      if(!travellers.includes(memberName)){
+        travellers.push(memberName);
+        await sb.from('trips').update({travellers}).eq('id',invite.trip_id);
+      }
+    }
     window.history.replaceState({}, '', '/app.html');
     window._pendingOpenTripId = invite.trip_id;
+    sessionStorage.removeItem('orbitsplit_migrated');
   } else {
     console.error('Failed to add member:', JSON.stringify(me));
     showToast('Could not accept invite: ' + me.message);
@@ -1784,6 +1795,37 @@ async function migrateExistingTrips(){
     }
     sessionStorage.setItem('orbitsplit_migrated','1');
   }catch(e){console.warn('Migration skipped:',e);}
+}
+
+
+// ── REAL-TIME SYNC ──
+let realtimeChannel = null;
+
+function subscribeToTrip(tripId){
+  if(realtimeChannel) realtimeChannel.unsubscribe();
+  realtimeChannel = sb.channel(`trip-${tripId}`)
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'trip_data',filter:`trip_id=eq.${tripId}`},
+      async payload => {
+        const t = tripById(tripId);
+        if(!t) return;
+        const d = payload.new;
+        // Only update if change is from another user
+        if(d.user_id === currentUser.id) return;
+        t.places   = d.places   || [];
+        t.expenses = d.expenses || [];
+        t.docs     = d.docs     || [];
+        t.checks   = d.checks   || [];
+        t.journal  = d.journal  || [];
+        t.pictures = d.pictures || [];
+        t.notes    = d.notes    || '';
+        if(currentTripId === tripId) renderPlanner();
+        showToast('Trip updated by another member');
+      })
+    .subscribe();
+}
+
+function unsubscribeFromTrip(){
+  if(realtimeChannel){ realtimeChannel.unsubscribe(); realtimeChannel = null; }
 }
 
 async function loadTrips(){
@@ -1866,6 +1908,7 @@ function showView(id){
 }
 function goHome(){
   if(!currentUser){window.location.href='/';return;}
+  unsubscribeFromTrip();
   currentTripId=null; showView('dashboard'); renderDashboard();
 }
 async function openTrip(id){
@@ -1873,6 +1916,7 @@ async function openTrip(id){
   setTimeout(attachAutocomplete, 200);
   currentTripId=id;
   if(!tripById(id)?.loaded) await loadTripData(id);
+  subscribeToTrip(id);
   showView('planner'); renderPlanner();
   document.querySelectorAll('.planner-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.planner-section').forEach(s=>s.classList.remove('active'));
