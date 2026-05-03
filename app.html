@@ -955,6 +955,19 @@ function gaEvent(name, params){
         <button class="btn btn-ghost" onclick="document.getElementById('edit-delete-confirm').style.display='none'" style="flex:1;">Cancel</button>
       </div>
     </div>
+    <!-- Members section (owners only) -->
+    <div id="et-members-section" style="border-top:1px solid var(--glass-border);padding-top:var(--space-5);margin-top:var(--space-2);">
+      <div style="font-size:var(--text-2xs);font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:var(--space-3);">Trip members</div>
+      <div id="et-members-list" style="display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-4);"></div>
+      <div style="display:flex;gap:var(--space-2);">
+        <input type="email" id="et-invite-email" placeholder="Invite by email…" style="flex:1;" maxlength="254"/>
+        <button class="btn btn-ghost btn-inline" onclick="inviteMember()" style="white-space:nowrap;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Invite
+        </button>
+      </div>
+      <div id="et-invite-msg" style="font-size:var(--text-xs);margin-top:var(--space-2);display:none;"></div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-danger" onclick="document.getElementById('edit-delete-confirm').style.display='block'">Delete</button>
       <button class="btn btn-ghost" onclick="closeEditTrip()">Cancel</button>
@@ -1580,23 +1593,152 @@ async function showApp(){
   // Show skeleton cards immediately while trips load
   showView('dashboard');
   renderSkeletons(3);
+  await migrateExistingTrips();
+  await checkPendingInvite();
   await loadTrips();
   renderDashboard();
 }
 
 // ── SUPABASE DATA ──
+
+
+async function loadTripMembers(tripId){
+  const t = tripById(tripId); if(!t) return;
+  const isOwner = t.isOwner;
+  document.getElementById('et-members-section').style.display = isOwner ? '' : 'none';
+  if(!isOwner) return;
+
+  const{data:members}=await sb.from('trip_members')
+    .select('user_id, role, profiles:user_id(email, raw_user_meta_data)')
+    .eq('trip_id', tripId);
+
+  // Fallback: just show user_ids if profiles join not available
+  const{data:members2}=await sb.from('trip_members')
+    .select('user_id, role')
+    .eq('trip_id', tripId);
+
+  const list = document.getElementById('et-members-list');
+  list.innerHTML = (members2||[]).map(m=>{
+    const isMe = m.user_id === currentUser.id;
+    const label = isMe ? (currentUser.email||'You') : m.user_id.substring(0,8)+'…';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--glass-xs);border-radius:var(--radius-xs);">
+      <div>
+        <div style="font-size:var(--text-xs);font-weight:500;">${esc(label)}</div>
+        <div style="font-size:11px;color:var(--fg-tertiary);">${m.role}</div>
+      </div>
+      ${!isMe?`<button onclick="removeMember('${tripId}','${m.user_id}')" style="background:none;border:none;color:var(--fg-tertiary);cursor:pointer;font-size:18px;padding:0 4px;">×</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function inviteMember(){
+  const email = document.getElementById('et-invite-email').value.trim();
+  const msg = document.getElementById('et-invite-msg');
+  const t = tripById(editingTripId); if(!t||!email) return;
+
+  msg.style.display='';
+  msg.style.color='var(--fg-tertiary)';
+  msg.textContent='Looking up user…';
+
+  // Look up user by email via auth admin (requires edge function in production)
+  // For now: try to find user in trip_members by checking auth.users via RPC
+  // Simple approach: store invite as pending, user sees it on next login
+  const{data:invite,error}=await sb.from('trip_invites').insert({
+    trip_id:t.id,
+    invited_by:currentUser.id,
+    invited_email:email,
+    token:crypto.randomUUID()
+  }).select().single();
+
+  if(error&&error.code==='42P01'){
+    // trip_invites table doesn't exist yet
+    msg.style.color='var(--rose)';
+    msg.textContent='Run the invites SQL migration first.';
+    return;
+  }
+  if(error){
+    msg.style.color='var(--rose)';
+    msg.textContent='Error: '+error.message;
+    return;
+  }
+
+  document.getElementById('et-invite-email').value='';
+  msg.style.color='var(--mint)';
+  msg.textContent='✓ Invite link created! Share this with '+email+':';
+
+  // Show the invite link
+  const inviteLink = `${window.location.origin}/app.html?invite=${invite.token}`;
+  msg.innerHTML += `<br/><a href="${inviteLink}" style="color:var(--blue-hi);font-size:11px;word-break:break-all;">${inviteLink}</a>
+    <button onclick="navigator.clipboard.writeText('${inviteLink}').then(()=>this.textContent='Copied!')" style="background:var(--glass-sm);border:1px solid var(--glass-border);border-radius:100px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--fg-secondary);margin-left:6px;">Copy link</button>`;
+}
+
+async function removeMember(tripId, userId){
+  if(!confirm('Remove this member from the trip?')) return;
+  await sb.from('trip_members').delete().eq('trip_id',tripId).eq('user_id',userId);
+  loadTripMembers(tripId);
+}
+
+async function checkPendingInvite(){
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('invite');
+  if(!token) return;
+
+  const{data:invite,error}=await sb.from('trip_invites')
+    .select('*').eq('token',token).eq('accepted',false).single();
+  if(error||!invite) return;
+
+  // Add current user as member
+  const{error:me}=await sb.from('trip_members').insert({
+    trip_id:invite.trip_id, user_id:currentUser.id, role:'member'
+  });
+
+  if(!me){
+    // Mark invite as accepted
+    await sb.from('trip_invites').update({accepted:true}).eq('token',token);
+    // Clean up URL
+    window.history.replaceState({}, '', '/app.html');
+    // Reload trips to show the new shared trip
+    await loadTrips();
+    renderDashboard();
+    // Open the trip directly
+    if(invite.trip_id) openTrip(invite.trip_id);
+  }
+}
+
+async function migrateExistingTrips(){
+  // For trips created before trip_members existed, add owner row if missing
+  const{data:myTrips}=await sb.from('trips')
+    .select('id')
+    .eq('user_id', currentUser.id);  // old-style check still works temporarily
+  if(!myTrips||!myTrips.length) return;
+  for(const t of myTrips){
+    const{data:existing}=await sb.from('trip_members')
+      .select('id').eq('trip_id',t.id).eq('user_id',currentUser.id).single();
+    if(!existing){
+      await sb.from('trip_members').insert({
+        trip_id:t.id, user_id:currentUser.id, role:'owner'
+      });
+    }
+  }
+}
+
 async function loadTrips(){
-  const{data,error}=await sb.from('trips').select('*, trip_data(*)').order('created_at',{ascending:false});
+  const{data,error}=await sb.from('trips')
+    .select('*, trip_data(*), trip_members(user_id, role)')
+    .order('created_at',{ascending:false});
   if(error){console.error(error);return;}
   trips=(data||[]).map(t=>{
     const d=t.trip_data?.[0]||{};
+    const members=t.trip_members||[];
+    const isOwner=members.some(m=>m.user_id===currentUser.id&&m.role==='owner');
     return{
       id:t.id, name:t.name, destination:t.destination,
       startDate:t.start_date, endDate:t.end_date,
       travellers:t.travellers||[],
       places:d.places||[], expenses:d.expenses||[], docs:d.docs||[],
       checks:d.checks||[], journal:d.journal||[], pictures:d.pictures||[],
-      notes:d.notes||'', dataId:d.id||null
+      notes:d.notes||'', dataId:d.id||null,
+      isOwner, members
     };
   });
 }
@@ -1607,7 +1749,7 @@ async function saveTrip(tripId){
   try{
     // Upsert trip row
     const{error:te}=await sb.from('trips').upsert({
-      id:t.id, user_id:currentUser.id,
+      id:t.id,
       name:t.name, destination:t.destination||null,
       start_date:t.startDate||null, end_date:t.endDate||null,
       travellers:t.travellers||[]
@@ -1754,6 +1896,10 @@ async function createTrip(){
   closeNewTrip();
   btn.disabled=false;
   await saveTrip(trip.id);
+  // Add creator as owner in trip_members
+  await sb.from('trip_members').insert({
+    trip_id:trip.id, user_id:currentUser.id, role:'owner'
+  });
   gaEvent('create_trip');
   openTrip(trip.id);
 }
@@ -1761,6 +1907,8 @@ async function createTrip(){
 // ── EDIT TRIP ──
 function openEditTrip(id){
   if(!id) return;
+  const t=tripById(id);
+  if(t&&!t.isOwner){alert('Only the trip owner can edit this trip.');return;}
   editingTripId=id; const t=tripById(id);
   if(!t) return;
   document.getElementById('et-name').value=t.name;
@@ -1769,6 +1917,7 @@ function openEditTrip(id){
   document.getElementById('et-start').value=t.startDate||'';
   document.getElementById('et-end').value=t.endDate||'';
   document.getElementById('modal-edit').style.display='flex';
+  loadTripMembers(id);
 }
 function closeEditTrip(){document.getElementById('modal-edit').style.display='none';document.getElementById('edit-delete-confirm').style.display='none';editingTripId=null;}
 document.getElementById('modal-edit').addEventListener('click',function(e){if(e.target===this)closeEditTrip();});
