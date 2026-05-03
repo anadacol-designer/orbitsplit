@@ -1776,7 +1776,7 @@ async function saveTrip(tripId){
       start_date:t.startDate||null, end_date:t.endDate||null,
       travellers:t.travellers||[]
     });
-    if(te) throw te;
+    if(te){console.error('trips upsert error:',JSON.stringify(te));throw te;}
     // Upsert trip_data row
     const dataPayload={
       trip_id:t.id, user_id:currentUser.id,
@@ -1786,7 +1786,7 @@ async function saveTrip(tripId){
     };
     if(t.dataId) dataPayload.id=t.dataId;
     const{data:dd,error:de}=await sb.from('trip_data').upsert(dataPayload).select('id').single();
-    if(de) throw de;
+    if(de){console.error('trip_data upsert error:',JSON.stringify(de));throw de;}
     if(dd) t.dataId=dd.id;
     setSaved();
   } catch(e){
@@ -1976,11 +1976,21 @@ async function createTrip(){
   trips.unshift(trip);
   closeNewTrip();
   btn.disabled=false;
-  await saveTrip(trip.id);
-  // Add creator as owner in trip_members
-  await sb.from('trip_members').insert({
-    trip_id:trip.id, user_id:currentUser.id, role:'owner'
+  // Insert trip_members FIRST so RLS allows the subsequent save
+  const{error:tme}=await sb.from('trips').insert({
+    id:trip.id, user_id:currentUser.id,
+    name:trip.name, destination:trip.destination||null,
+    start_date:trip.startDate||null, end_date:trip.endDate||null,
+    travellers:trip.travellers||[]
   });
+  if(!tme){
+    await sb.from('trip_members').insert({
+      trip_id:trip.id, user_id:currentUser.id, role:'owner'
+    });
+  } else {
+    console.error('trip insert error:', JSON.stringify(tme));
+  }
+  await saveTrip(trip.id);
   gaEvent('create_trip');
   // Send invites for email addresses
   if(emails.length){
