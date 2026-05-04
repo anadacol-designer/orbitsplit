@@ -1726,14 +1726,15 @@ async function inviteMember(){
   loadTripMembers(editingTripId);
 }
 
-async 
+
+
 function copyTripCode(){
   const code=document.getElementById('et-tripcode').textContent;
   if(!code||code==='—') return;
   navigator.clipboard.writeText(code).then(()=>showToast('Trip code copied!'));
 }
 
-function removeMember(tripId, userId){
+async function removeMember(tripId, userId){
   // Find member name from travellers
   const t=tripById(tripId);
   // We need to map userId to a display name — use email from member list if possible
@@ -1921,14 +1922,8 @@ async function leaveTrip(tripId){
 }
 
 // ── ORPHANED DEBT REALLOCATION ──
-async 
-function copyTripCode(){
-  const code=document.getElementById('et-tripcode').textContent;
-  if(!code||code==='—') return;
-  navigator.clipboard.writeText(code).then(()=>showToast('Trip code copied!'));
-}
 
-function removeMemberWithReallocation(tripId, userId, memberName){
+async function removeMemberWithReallocation(tripId, userId, memberName){
   const t=tripById(tripId); if(!t||!t.loaded) await loadTripData(tripId);
   const trip=tripById(tripId); if(!trip) return;
 
@@ -2017,7 +2012,6 @@ function unsubscribeFromTrip(){
 }
 
 async function loadTrips(){
-  // Query via trip_members (respects new RLS policy)
   const{data,error}=await sb.from('trips')
     .select('id, name, destination, start_date, end_date, travellers, user_id, trip_code, trip_members(user_id, role)')
     .order('created_at',{ascending:false});
