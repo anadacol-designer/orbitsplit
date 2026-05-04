@@ -633,6 +633,10 @@ function gaEvent(name, params){
       </div>
       <!-- Right: stats + edit button aligned to top -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-4);">
+        <button class="back-btn" id="leave-trip-btn" onclick="leaveTrip(currentTripId)" style="display:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Leave trip
+        </button>
         <button class="back-btn" id="edit-trip-btn" onclick="openEditTrip(currentTripId)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit trip
         </button>
@@ -953,6 +957,15 @@ function gaEvent(name, params){
         <button class="btn btn-danger btn-inline" onclick="document.getElementById('edit-delete-confirm').style.display='none';doDeleteTrip()" style="flex:1;">Yes, delete</button>
         <button class="btn btn-ghost" onclick="document.getElementById('edit-delete-confirm').style.display='none'" style="flex:1;">Cancel</button>
       </div>
+    </div>
+    <!-- Trip Code -->
+    <div id="et-tripcode-wrap" style="border-top:1px solid rgba(255,255,255,0.08);margin-top:16px;padding-top:20px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.38);margin-bottom:10px;">Trip code</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div id="et-tripcode" style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--fg-primary);letter-spacing:0.15em;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 20px;"></div>
+        <button onclick="copyTripCode()" style="background:none;border:1px solid rgba(255,255,255,0.12);border-radius:100px;padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.55);cursor:pointer;">Copy</button>
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">Share this code so others can join the trip.</div>
     </div>
     <!-- Members section -->
     <div id="et-members-section" style="border-top:1px solid rgba(255,255,255,0.08);margin-top:24px;padding-top:24px;">
@@ -1713,14 +1726,26 @@ async function inviteMember(){
   loadTripMembers(editingTripId);
 }
 
-async function removeMember(tripId, userId){
-  if(!confirm('Remove this member from the trip?')) return;
-  await sb.from('trip_members').delete().eq('trip_id',tripId).eq('user_id',userId);
-  loadTripMembers(tripId);
+async 
+function copyTripCode(){
+  const code=document.getElementById('et-tripcode').textContent;
+  if(!code||code==='—') return;
+  navigator.clipboard.writeText(code).then(()=>showToast('Trip code copied!'));
+}
+
+function removeMember(tripId, userId){
+  // Find member name from travellers
+  const t=tripById(tripId);
+  // We need to map userId to a display name — use email from member list if possible
+  const memberName=prompt('Enter the name of this member as it appears in expenses (used to reassign their expenses):');
+  if(!memberName) return;
+  await removeMemberWithReallocation(tripId, userId, memberName);
 }
 
 async function checkPendingInvite(){
   const params = new URLSearchParams(window.location.search);
+  const codeParam = params.get('code');
+  if(codeParam){ window.history.replaceState({}, '', '/app.html'); await joinByCode(codeParam); }
   const token = params.get('invite');
   if(!token) return;
 
@@ -1798,6 +1823,169 @@ async function migrateExistingTrips(){
 }
 
 
+
+// ── TRIP CODE & SHADOW PROFILES ──
+
+
+function promptJoinCode(){
+  const code=prompt('Enter the 6-character trip code:');
+  if(code) joinByCode(code);
+}
+
+async function joinByCode(code){
+  if(!code) return;
+  const{data:trip,error}=await sb.from('trips')
+    .select('id,name,trip_code').eq('trip_code',code.toUpperCase().trim()).single();
+  if(error||!trip){ showToast('Trip code not found.'); return; }
+
+  // Check already a member
+  const{data:existing}=await sb.from('trip_members')
+    .select('id').eq('trip_id',trip.id).eq('user_id',currentUser.id).maybeSingle();
+  if(existing){ showToast('You are already in this trip!'); openTrip(trip.id); return; }
+
+  // Check for shadow profile match
+  const meta=currentUser.user_metadata||{};
+  const email=currentUser.email||'';
+  const{data:shadow}=await sb.from('shadow_profiles')
+    .select('*').eq('trip_id',trip.id).eq('email',email).maybeSingle();
+
+  // Add as member
+  const{error:me}=await sb.from('trip_members').insert({
+    trip_id:trip.id, user_id:currentUser.id, role:'member'
+  });
+  if(me){ showToast('Could not join trip: '+me.message); return; }
+
+  // Merge shadow profile if exists
+  if(shadow&&!shadow.merged_into){
+    await sb.from('shadow_profiles').update({merged_into:currentUser.id}).eq('id',shadow.id);
+    // Update expenses in trip_data that reference this shadow email → update payer to real name
+    const displayName=meta.display_name||meta.full_name||meta.name||email.split('@')[0];
+    const{data:td}=await sb.from('trip_data').select('*').eq('trip_id',trip.id).single();
+    if(td){
+      const expenses=(td.expenses||[]).map(e=>{
+        if(e.split===shadow.display_name+':split') e.split=displayName+':split';
+        return e;
+      });
+      await sb.from('trip_data').update({expenses}).eq('id',td.id);
+    }
+  }
+
+  // Add to travellers list
+  const displayName=meta.display_name||meta.full_name||meta.name||email.split('@')[0];
+  const{data:tripData}=await sb.from('trips').select('travellers').eq('id',trip.id).single();
+  if(tripData){
+    const travellers=[...(tripData.travellers||[])];
+    if(!travellers.includes(displayName)) travellers.push(displayName);
+    await sb.from('trips').update({travellers}).eq('id',trip.id);
+  }
+
+  sessionStorage.removeItem('orbitsplit_migrated');
+  await loadTrips();
+  renderDashboard();
+  showToast(`Joined "${trip.name}" successfully! 🎉`);
+  openTrip(trip.id);
+}
+
+// ── SOFT LOCK ON LEAVE ──
+function calcMemberNetBalance(tripId){
+  const t=tripById(tripId); if(!t) return 0;
+  const me=getMe();
+  let lent=0, borrowed=0;
+  t.expenses.forEach(e=>{
+    const{payer,shares}=parseSplit(e.split,e.amount,e.method,e.customShares);
+    const myShare=shares[me]||0;
+    if(payer===me) lent+=e.amount-myShare;
+    else borrowed+=myShare;
+  });
+  return lent-borrowed; // positive=others owe me, negative=I owe others
+}
+
+async function leaveTrip(tripId){
+  const t=tripById(tripId); if(!t) return;
+  if(t.isOwner){ showToast("You're the trip owner — transfer ownership before leaving."); return; }
+
+  await loadTripData(tripId);
+  const net=calcMemberNetBalance(tripId);
+  if(Math.abs(net)>0.01){
+    const dir=net>0?`Others owe you €${net.toFixed(2)}`:`You owe €${Math.abs(net).toFixed(2)}`;
+    alert(`You can't leave yet — ${dir}. Please settle up first.`);
+    return;
+  }
+
+  if(!confirm('Leave this trip? You can rejoin later using the trip code.')) return;
+  await sb.from('trip_members').delete().eq('trip_id',tripId).eq('user_id',currentUser.id);
+  trips=trips.filter(t=>t.id!==tripId);
+  if(currentTripId===tripId) goHome();
+  else renderDashboard();
+  showToast('You have left the trip.');
+}
+
+// ── ORPHANED DEBT REALLOCATION ──
+async 
+function copyTripCode(){
+  const code=document.getElementById('et-tripcode').textContent;
+  if(!code||code==='—') return;
+  navigator.clipboard.writeText(code).then(()=>showToast('Trip code copied!'));
+}
+
+function removeMemberWithReallocation(tripId, userId, memberName){
+  const t=tripById(tripId); if(!t||!t.loaded) await loadTripData(tripId);
+  const trip=tripById(tripId); if(!trip) return;
+
+  // Find orphaned expenses (where this member is payer or sole debtor)
+  const orphaned=trip.expenses.filter(e=>{
+    const{payer}=parseSplit(e.split,e.amount,e.method,e.customShares);
+    return payer===memberName;
+  });
+
+  let choice='split';
+  if(orphaned.length>0){
+    const total=orphaned.reduce((s,e)=>s+e.amount,0);
+    choice=prompt(
+      `${memberName} has ${orphaned.length} expense(s) totalling €${total.toFixed(2)}.
+
+How should orphaned debt be handled?
+1 = Split among everyone
+2 = Absorb (you take it)
+3 = Cancel these expenses
+
+Enter 1, 2, or 3:`
+    );
+    if(!choice) return;
+
+    const me=getMe();
+    const remaining=trip.travellers.filter(n=>n!==memberName);
+
+    trip.expenses=trip.expenses.map(e=>{
+      const{payer}=parseSplit(e.split,e.amount,e.method,e.customShares);
+      if(payer!==memberName) return e;
+      if(choice==='1'||choice==='1.'){
+        // Split among remaining
+        e.split=me+':split'; e.method='even';
+        e.customShares=null;
+      } else if(choice==='2'||choice==='2.'){
+        // Organizer absorbs
+        e.split=me+':split'; e.method='even';
+        e.customShares={[me]:e.amount};
+      } else {
+        // Cancel — mark amount 0
+        e.amount=0;
+      }
+      return e;
+    }).filter(e=>e.amount>0);
+  }
+
+  // Remove from travellers
+  trip.travellers=trip.travellers.filter(n=>n!==memberName);
+  await saveTrip(tripId);
+
+  // Remove from trip_members
+  await sb.from('trip_members').delete().eq('trip_id',tripId).eq('user_id',userId);
+  renderPlanner();
+  loadTripMembers(tripId);
+  showToast(`${memberName} removed from trip.`);
+}
+
 // ── REAL-TIME SYNC ──
 let realtimeChannel = null;
 
@@ -1831,7 +2019,7 @@ function unsubscribeFromTrip(){
 async function loadTrips(){
   // Query via trip_members (respects new RLS policy)
   const{data,error}=await sb.from('trips')
-    .select('id, name, destination, start_date, end_date, travellers, user_id, trip_members(user_id, role)')
+    .select('id, name, destination, start_date, end_date, travellers, user_id, trip_code, trip_members(user_id, role)')
     .order('created_at',{ascending:false});
   if(error){console.error('loadTrips error:',error);return;}
   trips=(data||[]).map(t=>{
@@ -1848,7 +2036,8 @@ async function loadTrips(){
       checks:existing?.checks||[], journal:existing?.journal||[], pictures:existing?.pictures||[],
       notes:existing?.notes||'', dataId:existing?.dataId||null,
       loaded:existing?.loaded||false,
-      isOwner, members
+      isOwner, members,
+      tripCode: t.trip_code
     };
   });
 }
@@ -1875,7 +2064,8 @@ async function saveTrip(tripId){
       id:t.id, user_id:currentUser.id,
       name:t.name, destination:t.destination||null,
       start_date:t.startDate||null, end_date:t.endDate||null,
-      travellers:t.travellers||[]
+      travellers:t.travellers||[],
+      trip_code:t.tripCode||null
     });
     if(te){console.error('trips upsert error:',JSON.stringify(te));throw te;}
     // Upsert trip_data row
@@ -2185,6 +2375,7 @@ function renderPlanner(){
   const t=currentTrip(); if(!t) return;
   document.getElementById('pl-eyebrow').textContent=t.destination||'Trip';
   const editBtn=document.getElementById('edit-trip-btn'); if(editBtn) editBtn.style.display=t.isOwner?'':'none';
+  const leaveBtn=document.getElementById('leave-trip-btn'); if(leaveBtn) leaveBtn.style.display=!t.isOwner?'':'none';
   const words=t.name.split(' ');
   const last=words.pop();
   document.getElementById('pl-title').innerHTML=`${words.join(' ')} <span>${last}</span>`;
